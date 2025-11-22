@@ -116,7 +116,75 @@ export const advantages = [
     name: 'Ataque Especial',
     cost: 1,
     summary: 'F+2 ou PdF+2, custa 1 PM',
-    description: 'Praticamente qualquer aventureiro, herói ou guerreiro tem algum tipo de técnica ou ataque que provoca dano maior. Isso é tão comum nos mundos de aventura que qualquer personagem pode fazer um Ataque Especial gastando 1 PM e ganhando F+1 ou PdF+1. Isto é apenas uma manobra especial; não é preciso pagar pontos de personagem por ela. A vantagem Ataque Especial, no entanto, é uma versão melhorada dessa manobra. Ela permite gastar 1 PM e aumentar em +2 sua Força ou Poder de Fogo (escolha F ou PdF quando adquirir esta vantagem) para um único ataque. Você pode pagar mais ou menos pela vantagem, para dar mais poderes ou fraquezas ao Ataque Especial. Alguns desses ajustes também afetam o custo do ataque em Pontos de Magia: • Amplo (+2 pontos, +2 PMs): apenas para ataques com PdF. Todas as criaturas dentro do alcance de ataque à distância são atingidas (incluindo aliados, e até mesmo você!). Todos os alvos têm direito a esquiva. • Lento (–1 ponto): apenas para ataques com PdF. O alvo recebe H+2 em sua esquiva. • Paralisante (+1 ponto): em vez de causar dano, o ataque funciona como a vantagem Paralisia (pelo custo normal em Pontos de Magia). • Penetrante (+1 ponto, +1 PM): impõe A–1 contra o alvo em sua Força de Defesa. • Perigoso (+2 pontos, +2 PMs): este ataque consegue um acerto crítico com um resultado 5 ou 6 no dado. • Perto da Morte (–2 pontos, –1 PM): o ataque só pode ser usado quando você está Perto da Morte. • Poderoso (+2 pontos, +2 PMs): em caso de acerto crítico, o ataque triplica sua Força ou PdF (em vez de duplicar). • Preciso (+1 ponto): impõe H–1 contra o alvo em sua Força de Defesa. • Teleguiado (+1 ponto): apenas para PdF. O ataque persegue o alvo, impondo H–1 em tentativas de esquiva. Um Ataque Especial nunca pode custar menos de 1 ponto de personagem. Também não pode custar menos de 1 PM para ser usado. Você pode tornar seu Ataque Especial mais poderoso, durante a evolução do personagem (veja o quadro ao lado).'
+    description: 'Praticamente qualquer aventureiro, herói ou guerreiro tem algum tipo de técnica ou ataque que provoca dano maior. Isso é tão comum nos mundos de aventura que qualquer personagem pode fazer um Ataque Especial gastando 1 PM e ganhando F+1 ou PdF+1. Isto é apenas uma manobra especial; não é preciso pagar pontos de personagem por ela. A vantagem Ataque Especial, no entanto, é uma versão melhorada dessa manobra. Ela permite gastar 1 PM e aumentar em +2 sua Força ou Poder de Fogo (escolha F ou PdF quando adquirir esta vantagem) para um único ataque. Você pode pagar mais ou menos pela vantagem, para dar mais poderes ou fraquezas ao Ataque Especial. Alguns desses ajustes também afetam o custo do ataque em Pontos de Magia: • Amplo (+2 pontos, +2 PMs): apenas para ataques com PdF. Todas as criaturas dentro do alcance de ataque à distância são atingidas (incluindo aliados, e até mesmo você!). Todos os alvos têm direito a esquiva. • Lento (–1 ponto): apenas para ataques com PdF. O alvo recebe H+2 em sua esquiva. • Paralisante (+1 ponto): em vez de causar dano, o ataque funciona como a vantagem Paralisia (pelo custo normal em Pontos de Magia). • Penetrante (+1 ponto, +1 PM): impõe A–1 contra o alvo em sua Força de Defesa. • Perigoso (+2 pontos, +2 PMs): este ataque consegue um acerto crítico com um resultado 5 ou 6 no dado. • Perto da Morte (–2 pontos, –1 PM): o ataque só pode ser usado quando você está Perto da Morte. • Poderoso (+2 pontos, +2 PMs): em caso de acerto crítico, o ataque triplica sua Força ou PdF (em vez de duplicar). • Preciso (+1 ponto): impõe H–1 contra o alvo em sua Força de Defesa. • Teleguiado (+1 ponto): apenas para PdF. O ataque persegue o alvo, impondo H–1 em tentativas de esquiva. Um Ataque Especial nunca pode custar menos de 1 ponto de personagem. Também não pode custar menos de 1 PM para ser usado. Você pode tornar seu Ataque Especial mais poderoso, durante a evolução do personagem (veja o quadro ao lado).',
+    modifiers: [
+      {
+        id: 'amplo',
+        name: 'Amplo',
+        costModifier: 2,
+        pmModifier: 2,
+        description: 'Apenas para ataques com PdF. Todas as criaturas dentro do alcance de ataque à distância são atingidas (incluindo aliados, e até mesmo você!). Todos os alvos têm direito a esquiva.',
+        restrictions: ['pdfOnly']
+      },
+      {
+        id: 'lento',
+        name: 'Lento',
+        costModifier: -1,
+        pmModifier: 0,
+        description: 'Apenas para ataques com PdF. O alvo recebe H+2 em sua esquiva.',
+        restrictions: ['pdfOnly']
+      },
+      {
+        id: 'paralisante',
+        name: 'Paralisante',
+        costModifier: 1,
+        pmModifier: 0,
+        description: 'Em vez de causar dano, o ataque funciona como a vantagem Paralisia (pelo custo normal em Pontos de Magia).'
+      },
+      {
+        id: 'penetrante',
+        name: 'Penetrante',
+        costModifier: 1,
+        pmModifier: 1,
+        description: 'Impõe A–1 contra o alvo em sua Força de Defesa.'
+      },
+      {
+        id: 'perigoso',
+        name: 'Perigoso',
+        costModifier: 2,
+        pmModifier: 2,
+        description: 'Este ataque consegue um acerto crítico com um resultado 5 ou 6 no dado.'
+      },
+      {
+        id: 'perto-da-morte',
+        name: 'Perto da Morte',
+        costModifier: -2,
+        pmModifier: -1,
+        description: 'O ataque só pode ser usado quando você está Perto da Morte.'
+      },
+      {
+        id: 'poderoso',
+        name: 'Poderoso',
+        costModifier: 2,
+        pmModifier: 2,
+        description: 'Em caso de acerto crítico, o ataque triplica sua Força ou PdF (em vez de duplicar).'
+      },
+      {
+        id: 'preciso',
+        name: 'Preciso',
+        costModifier: 1,
+        pmModifier: 0,
+        description: 'Impõe H–1 contra o alvo em sua Força de Defesa.'
+      },
+      {
+        id: 'teleguiado',
+        name: 'Teleguiado',
+        costModifier: 1,
+        pmModifier: 0,
+        description: 'Apenas para PdF. O ataque persegue o alvo, impondo H–1 em tentativas de esquiva.',
+        restrictions: ['pdfOnly']
+      }
+    ]
   },
   {
     name: 'Ataque Múltiplo',
@@ -146,7 +214,8 @@ export const advantages = [
     name: 'Elementalista',
     cost: 1,
     summary: 'Gasta metade dos PMs em magias elementais',
-    description: 'Escolha um tipo de Magia Elemental (água, ar, fogo, terra ou espírito). Você sempre gasta metade dos PMs necessários (arredonde para cima) para lançar magias do elemento escolhido. Você pode comprar esta vantagem várias vezes, uma para cada elemento. Esta vantagem não existe para as Magias Branca e Negra.'
+    description: 'Escolha um tipo de Magia Elemental (água, ar, fogo, terra ou espírito). Você sempre gasta metade dos PMs necessários (arredonde para cima) para lançar magias do elemento escolhido. Você pode comprar esta vantagem várias vezes, uma para cada elemento. Esta vantagem não existe para as Magias Branca e Negra.',
+    purchasableMultiple: true
   },
   {
     name: 'Energia Extra',
@@ -176,7 +245,8 @@ export const advantages = [
     name: 'Forma Alternativa',
     cost: 2,
     summary: 'Pode mudar de forma e poderes',
-    description: 'Você pode mudar de forma e poderes. Para cada Forma Alternativa que tiver, pode construir um personagem diferente com a mesma quantidade de pontos, com outras características e vantagens — mas desvantagens, perícias e magias conhecidas permanecem sempre as mesmas. Digamos que seu personagem de 12 pontos tenha F4, H2, R2, A3, PdF1, Ataque Especial (1 pt), Forma Alternativa (2 pts), Código de Honra dos Heróis (–1 pt) e Maldição (–2 pts); ele pode mudar para uma segunda forma com F0, H5, R1, A1, PdF5, Aparência Inofensiva (1 pt), Forma Alternativa (2 pts), Código e Honra dos Heróis (–1 pt) e Maldição (–2 pts). Repare que as duas formas têm o mesmo Código de Honra e Maldição, e ambas precisam pagar 2 pontos por Forma Alternativa. (Nota: Monstruoso é a única desvantagem que não precisa ser compartilhada por todas as Formas.) Você pode comprar várias Formas Alternativas. Cada Forma pode ter uma vantagem única (veja o próximo capítulo), sendo a única maneira de ter mais de uma destas em um mesmo personagem. Mas lembre-se, você vai acumular os problemas de todas as Formas! Se um Anfíbio muda para um Anão, ainda precisará de um Ambiente Especial; e um construto nunca poderá recuperar PVs em nenhuma outra Forma. Mudar para uma Forma Alternativa demora um movimento. A mudança nunca vai aumentar seus Pontos de Vida ou de Magia atuais — mas pode reduzi-los, caso a nova Forma tenha Resistência mais baixa.'
+    description: 'Você pode mudar de forma e poderes. Para cada Forma Alternativa que tiver, pode construir um personagem diferente com a mesma quantidade de pontos, com outras características e vantagens — mas desvantagens, perícias e magias conhecidas permanecem sempre as mesmas. Digamos que seu personagem de 12 pontos tenha F4, H2, R2, A3, PdF1, Ataque Especial (1 pt), Forma Alternativa (2 pts), Código de Honra dos Heróis (–1 pt) e Maldição (–2 pts); ele pode mudar para uma segunda forma com F0, H5, R1, A1, PdF5, Aparência Inofensiva (1 pt), Forma Alternativa (2 pts), Código e Honra dos Heróis (–1 pt) e Maldição (–2 pts). Repare que as duas formas têm o mesmo Código de Honra e Maldição, e ambas precisam pagar 2 pontos por Forma Alternativa. (Nota: Monstruoso é a única desvantagem que não precisa ser compartilhada por todas as Formas.) Você pode comprar várias Formas Alternativas. Cada Forma pode ter uma vantagem única (veja o próximo capítulo), sendo a única maneira de ter mais de uma destas em um mesmo personagem. Mas lembre-se, você vai acumular os problemas de todas as Formas! Se um Anfíbio muda para um Anão, ainda precisará de um Ambiente Especial; e um construto nunca poderá recuperar PVs em nenhuma outra Forma. Mudar para uma Forma Alternativa demora um movimento. A mudança nunca vai aumentar seus Pontos de Vida ou de Magia atuais — mas pode reduzi-los, caso a nova Forma tenha Resistência mais baixa.',
+    purchasableMultiple: true
   },
   {
     name: 'Genialidade',
@@ -200,7 +270,8 @@ export const advantages = [
     name: 'Inimigo',
     cost: 1,
     summary: 'H+2 em combate contra tipo específico de criatura',
-    description: 'Você é especialmente treinado em combater certo tipo de criatura, conhecendo bem seus poderes e fraquezas. Escolha entre os seguintes: humanos, semi-humanos, humanoides, youkai (incluindo mortos-vivos) ou construtos (incluindo máquinas). Você recebe H+2 em combate e testes de perícias envolvendo criaturas deste tipo (saiba mais sobre essas criaturas no capítulo "Vantagens Únicas"). O mestre pode proibir esta vantagem, por exemplo, em mundos e campanhas onde só existam humanos (não é justo pagar 1 ponto para ter H+2 contra todo mundo), ou onde outras criaturas sejam muito raras.'
+    description: 'Você é especialmente treinado em combater certo tipo de criatura, conhecendo bem seus poderes e fraquezas. Escolha entre os seguintes: humanos, semi-humanos, humanoides, youkai (incluindo mortos-vivos) ou construtos (incluindo máquinas). Você recebe H+2 em combate e testes de perícias envolvendo criaturas deste tipo (saiba mais sobre essas criaturas no capítulo "Vantagens Únicas"). O mestre pode proibir esta vantagem, por exemplo, em mundos e campanhas onde só existam humanos (não é justo pagar 1 ponto para ter H+2 contra todo mundo), ou onde outras criaturas sejam muito raras.',
+    purchasableMultiple: true
   },
   {
     name: 'Invisibilidade',
@@ -260,7 +331,8 @@ export const advantages = [
     name: 'Membros Extras',
     cost: 2,
     summary: 'Braços/pernas extras, ataque adicional por rodada',
-    description: 'Você tem numerosos braços, pernas, cauda ou tentáculos. Você pode comprar esta vantagem várias vezes — por exemplo, gastando 6 pontos para ter três braços, tentáculos ou caudas extras. Além de utilidades óbvias, como segurar vários objetos, cada Membro Extra permite fazer um ataque adicional por rodada. Esse ataque tem FA=F+1d ou FA=PdF+1d, sem somar Habilidade. Se quiser aumentar a FA através de vantagens ou manobras, deve pagar o custo para cada ataque. Se não quiser fazer um ataque extra, o personagem pode usar seu Membro Extra para bloquear (FD+1 até a próxima rodada). Os bônus são cumulativos: bloquear com dois Membros Extras oferece FD+2. Qualquer personagem com Membros Extras sofre os mesmos efeitos de Monstruoso e Modelo Especial (mas não recebe pontos por estas desvantagens).'
+    description: 'Você tem numerosos braços, pernas, cauda ou tentáculos. Você pode comprar esta vantagem várias vezes — por exemplo, gastando 6 pontos para ter três braços, tentáculos ou caudas extras. Além de utilidades óbvias, como segurar vários objetos, cada Membro Extra permite fazer um ataque adicional por rodada. Esse ataque tem FA=F+1d ou FA=PdF+1d, sem somar Habilidade. Se quiser aumentar a FA através de vantagens ou manobras, deve pagar o custo para cada ataque. Se não quiser fazer um ataque extra, o personagem pode usar seu Membro Extra para bloquear (FD+1 até a próxima rodada). Os bônus são cumulativos: bloquear com dois Membros Extras oferece FD+2. Qualquer personagem com Membros Extras sofre os mesmos efeitos de Monstruoso e Modelo Especial (mas não recebe pontos por estas desvantagens).',
+    purchasableMultiple: true
   },
   {
     name: 'Memória Expandida',
@@ -308,13 +380,15 @@ export const advantages = [
     name: 'Pontos de Magia Extras',
     cost: 1,
     summary: 'PMs equivalentes a R+2',
-    description: 'Você tem Pontos de Magia adicionais, além daqueles já oferecidos por sua Resistência. Esta vantagem é especialmente recomendada para conjuradores e outros personagens que usam PMs para ativar suas magias ou habilidades especiais. Cada vez que compra esta vantagem, você recebe PMs equivalentes a R+2. Então, se você tem R4 (20 PMs) e paga um ponto por PMs Extras, agora terá Pontos de Magia equivalentes a R6 (ou seja, 30 PMs). Esta vantagem não afeta sua Resistência verdadeira e nem seus PVs, apenas seus PMs. Então, no exemplo anterior, você continuaria com 20 PVs e R4 para testes contra magias, velocidade máxima e outras situações. Você pode comprar a vantagem várias vezes para ter novos aumentos de R+2 em seus PMs.'
+    description: 'Você tem Pontos de Magia adicionais, além daqueles já oferecidos por sua Resistência. Esta vantagem é especialmente recomendada para conjuradores e outros personagens que usam PMs para ativar suas magias ou habilidades especiais. Cada vez que compra esta vantagem, você recebe PMs equivalentes a R+2. Então, se você tem R4 (20 PMs) e paga um ponto por PMs Extras, agora terá Pontos de Magia equivalentes a R6 (ou seja, 30 PMs). Esta vantagem não afeta sua Resistência verdadeira e nem seus PVs, apenas seus PMs. Então, no exemplo anterior, você continuaria com 20 PVs e R4 para testes contra magias, velocidade máxima e outras situações. Você pode comprar a vantagem várias vezes para ter novos aumentos de R+2 em seus PMs.',
+    purchasableMultiple: true
   },
   {
     name: 'Pontos de Vida Extras',
     cost: 1,
     summary: 'PVs equivalentes a R+2',
-    description: 'Você tem Pontos de Vida adicionais, além daqueles já oferecidos por sua Resistência. Cada vez que compra esta vantagem, você recebe PVs equivalentes a R+2. Então, se você tem R2 (10 PVs) e paga um ponto por PVs Extras, agora terá Pontos de Vida equivalentes a R4 (ou seja, 20 PVs). Esta vantagem não afeta sua Resistência verdadeira e nem seus PMs, apenas seus PVs. Então, no exemplo anterior, você continuaria com 10 PMs e R2 para efeito de testes contra magias, velocidade máxima e outras situações. Você pode comprar a vantagem várias vezes para ter novos aumentos de R+2 em seus PVs.'
+    description: 'Você tem Pontos de Vida adicionais, além daqueles já oferecidos por sua Resistência. Cada vez que compra esta vantagem, você recebe PVs equivalentes a R+2. Então, se você tem R2 (10 PVs) e paga um ponto por PVs Extras, agora terá Pontos de Vida equivalentes a R4 (ou seja, 20 PVs). Esta vantagem não afeta sua Resistência verdadeira e nem seus PMs, apenas seus PVs. Então, no exemplo anterior, você continuaria com 10 PMs e R2 para efeito de testes contra magias, velocidade máxima e outras situações. Você pode comprar a vantagem várias vezes para ter novos aumentos de R+2 em seus PVs.',
+    purchasableMultiple: true
   },
   {
     name: 'Possessão',
@@ -392,7 +466,8 @@ export const advantages = [
     name: 'Toque de Energia',
     cost: 1,
     summary: 'FA=A+1d+PMs gastos, máximo PMs = Armadura',
-    description: 'Você pode transmitir pela própria pele uma poderosa carga de energia, capaz de gerar uma Força de Ataque igual à Armadura + 1d + o número de PMs gastos. Por exemplo, um personagem que gasta 3 Pontos de Magia na manobra ataca com FA=A+1d+3. Habilidade não é incluída. A carga atinge quaisquer criaturas que estejam à distância de combate corpo-a-corpo, mesmo que não estejam tocando diretamente o personagem. O tipo de energia é escolhido pelo jogador quando compra a vantagem, e não pode ser trocado (mas você pode comprar a vantagem várias vezes, uma para cada energia). Para mais detalhes, veja "Tipos de Dano". Usar o Toque de Energia é o mesmo que fazer um ataque. O número máximo de PMs que você pode gastar em cada utilização é igual à sua Armadura.'
+    description: 'Você pode transmitir pela própria pele uma poderosa carga de energia, capaz de gerar uma Força de Ataque igual à Armadura + 1d + o número de PMs gastos. Por exemplo, um personagem que gasta 3 Pontos de Magia na manobra ataca com FA=A+1d+3. Habilidade não é incluída. A carga atinge quaisquer criaturas que estejam à distância de combate corpo-a-corpo, mesmo que não estejam tocando diretamente o personagem. O tipo de energia é escolhido pelo jogador quando compra a vantagem, e não pode ser trocado (mas você pode comprar a vantagem várias vezes, uma para cada energia). Para mais detalhes, veja "Tipos de Dano". Usar o Toque de Energia é o mesmo que fazer um ataque. O número máximo de PMs que você pode gastar em cada utilização é igual à sua Armadura.',
+    purchasableMultiple: true
   },
   {
     name: 'Torcida',

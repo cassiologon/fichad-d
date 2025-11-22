@@ -164,8 +164,23 @@
               :key="index"
               class="advantage-item"
             >
-              <span class="advantage-name">{{ advantage.name }}</span>
-              <span class="advantage-cost">{{ advantage.cost }} pts</span>
+              <div class="advantage-info">
+                <span class="advantage-name">
+                  {{ advantage.name }}
+                  <span v-if="advantage.quantity && advantage.quantity > 1" class="quantity-badge">x{{ advantage.quantity }}</span>
+                </span>
+                <span class="advantage-cost">{{ getAdvantageTotalCost(advantage) }} pts</span>
+                <div v-if="advantage.selectedModifiers && advantage.selectedModifiers.length > 0" class="advantage-modifiers">
+                  <span class="modifiers-label">Modificadores:</span>
+                  <span
+                    v-for="(modId, modIndex) in advantage.selectedModifiers"
+                    :key="modIndex"
+                    class="modifier-badge"
+                  >
+                    {{ getModifierName(advantage.name, modId) }}
+                  </span>
+                </div>
+              </div>
               <button
                 type="button"
                 @click="removeAdvantage(index)"
@@ -453,7 +468,18 @@
               @click="selectUniqueAdvantage(uniqueAdv)"
             >
               <div class="advantage-option-header">
-                <span class="advantage-option-name">{{ uniqueAdv.name }}</span>
+                <div class="advantage-option-name-wrapper">
+                  <span class="advantage-option-name">{{ uniqueAdv.name }}</span>
+                  <button
+                    v-if="uniqueAdv.fullDescription"
+                    type="button"
+                    class="advantage-info-btn"
+                    @click.stop="showUniqueAdvantageDescription(uniqueAdv)"
+                    title="Ver descrição completa"
+                  >
+                    🔍
+                  </button>
+                </div>
                 <span class="advantage-option-cost">{{ uniqueAdv.cost }} pts</span>
               </div>
               <div class="advantage-option-group">{{ uniqueAdv.group }}</div>
@@ -630,6 +656,160 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de Quantidade de Vantagem -->
+    <div v-if="showQuantityModal && advantageForQuantity" class="modal-overlay" @click.self="closeQuantityModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Adicionar {{ advantageForQuantity.name }}</h2>
+          <button type="button" @click="closeQuantityModal" class="btn-close-modal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="quantity-info">
+            <p><strong>Custo por unidade:</strong> {{ advantageForQuantity.cost }} pontos</p>
+            <p><strong>Custo total:</strong> {{ (advantageForQuantity.cost || 0) * advantageQuantity }} pontos</p>
+            <p v-if="!canAffordAdvantageWithQuantity()" class="error-message">
+              Pontos insuficientes. Você precisa de {{ (advantageForQuantity.cost || 0) * advantageQuantity }} pontos, mas tem apenas {{ remainingPoints }}.
+            </p>
+          </div>
+          <div class="quantity-selector">
+            <label>Quantidade:</label>
+            <div class="quantity-controls">
+              <button type="button" @click="decreaseQuantity" class="btn-quantity" :disabled="advantageQuantity <= 1">−</button>
+              <input
+                type="number"
+                v-model.number="advantageQuantity"
+                min="1"
+                class="quantity-input"
+              />
+              <button type="button" @click="increaseQuantity" class="btn-quantity">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" @click="closeQuantityModal" class="btn-cancel">Cancelar</button>
+          <button
+            type="button"
+            @click="confirmAdvantageWithQuantity"
+            class="btn-confirm"
+            :disabled="!canAffordAdvantageWithQuantity()"
+          >
+            Confirmar ({{ (advantageForQuantity.cost || 0) * advantageQuantity }} pts)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Modificadores de Vantagem -->
+    <div v-if="showModifiersModal && advantageForModifiers" class="modal-overlay" @click.self="closeModifiersModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Configurar {{ advantageForModifiers.name }}</h2>
+          <button type="button" @click="closeModifiersModal" class="btn-close-modal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="modifiers-info">
+            <p v-if="selectedModifiers.length === 0"><strong>Custo base:</strong> {{ advantageForModifiers.cost }} pontos</p>
+            <p v-else><strong>Custo por unidade:</strong> {{ calculateAdvantageCostWithModifiers(advantageForModifiers, selectedModifiers) }} pontos</p>
+            <div v-if="advantageForModifiers.purchasableMultiple" class="quantity-selector-inline">
+              <label>Quantidade:</label>
+              <div class="quantity-controls">
+                <button type="button" @click="decreaseQuantity" class="btn-quantity" :disabled="advantageQuantity <= 1">−</button>
+                <input
+                  type="number"
+                  v-model.number="advantageQuantity"
+                  min="1"
+                  class="quantity-input"
+                />
+                <button type="button" @click="increaseQuantity" class="btn-quantity">+</button>
+              </div>
+            </div>
+            <p><strong>Custo total:</strong> {{ calculateAdvantageCostWithModifiers(advantageForModifiers, selectedModifiers) * (advantageForModifiers.purchasableMultiple ? advantageQuantity : 1) }} pontos</p>
+            <p v-if="!canAffordAdvantageWithModifiers()" class="error-message">
+              Pontos insuficientes. Você precisa de {{ calculateAdvantageCostWithModifiers(advantageForModifiers, selectedModifiers) * (advantageForModifiers.purchasableMultiple ? advantageQuantity : 1) }} pontos, mas tem apenas {{ remainingPoints }}.
+            </p>
+          </div>
+          <div class="modifiers-list">
+            <h3>Modificadores Disponíveis</h3>
+            <div
+              v-for="modifier in advantageForModifiers.modifiers"
+              :key="modifier.id"
+              class="modifier-option"
+              :class="{ 'selected': isModifierSelected(modifier.id) }"
+              @click="toggleModifier(modifier.id)"
+            >
+              <div class="modifier-header">
+                <div class="modifier-name-wrapper">
+                  <input
+                    type="checkbox"
+                    :checked="isModifierSelected(modifier.id)"
+                    @change="toggleModifier(modifier.id)"
+                    @click.stop
+                  />
+                  <span class="modifier-name">{{ modifier.name }}</span>
+                </div>
+                <div class="modifier-cost">
+                  <span v-if="modifier.costModifier !== 0" class="cost-modifier">
+                    {{ modifier.costModifier > 0 ? '+' : '' }}{{ modifier.costModifier }} pts
+                  </span>
+                  <span v-if="modifier.pmModifier !== 0 && modifier.pmModifier !== undefined" class="pm-modifier">
+                    {{ modifier.pmModifier > 0 ? '+' : '' }}{{ modifier.pmModifier }} PM
+                  </span>
+                </div>
+              </div>
+              <div class="modifier-description">
+                {{ modifier.description }}
+              </div>
+              <div v-if="modifier.restrictions && modifier.restrictions.includes('pdfOnly')" class="modifier-restriction">
+                ⚠️ Apenas para ataques com Poder de Fogo (PdF)
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" @click="closeModifiersModal" class="btn-cancel">Cancelar</button>
+          <button
+            type="button"
+            @click="confirmAdvantageWithModifiers"
+            class="btn-confirm"
+            :disabled="!canAffordAdvantageWithModifiers()"
+          >
+            Confirmar ({{ calculateAdvantageCostWithModifiers(advantageForModifiers, selectedModifiers) * (advantageForModifiers.purchasableMultiple ? advantageQuantity : 1) }} pts)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popover de Descrição de Vantagem Única (Raça) -->
+    <div
+      v-if="selectedUniqueAdvantageForDescription"
+      class="popover-overlay"
+      @click="closeUniqueAdvantageDescription"
+    >
+      <div class="popover-content" @click.stop>
+        <div class="popover-header">
+          <h3>{{ selectedUniqueAdvantageForDescription.name }}</h3>
+          <button
+            type="button"
+            @click="closeUniqueAdvantageDescription"
+            class="popover-close-btn"
+          >
+            ×
+          </button>
+        </div>
+        <div class="popover-body">
+          <div class="popover-description">
+            <p
+              v-for="(paragraph, index) in formatDescription(selectedUniqueAdvantageForDescription.fullDescription)"
+              :key="index"
+              class="popover-paragraph"
+            >
+              {{ paragraph }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -657,9 +837,16 @@ export default {
       uniqueAdvantageSearch: '',
       selectedAdvantageForDescription: null,
       selectedDisadvantageForDescription: null,
+      selectedUniqueAdvantageForDescription: null,
       skillsMode: 'full', // 'full' ou 'specializations'
       selectedSpecializations: [], // Array temporário para especializações sendo selecionadas
       specializationSearch: '',
+      showModifiersModal: false,
+      advantageForModifiers: null, // Vantagem que está sendo configurada com modificadores
+      selectedModifiers: [], // IDs dos modificadores selecionados temporariamente
+      showQuantityModal: false,
+      advantageForQuantity: null, // Vantagem que está sendo configurada com quantidade
+      advantageQuantity: 1, // Quantidade selecionada temporariamente
       character: {
         name: '',
         level: 1,
@@ -706,7 +893,29 @@ export default {
     },
     advantagesCost() {
       if (!this.character.advantages) return 0
-      return this.character.advantages.reduce((sum, adv) => sum + adv.cost, 0)
+      return this.character.advantages.reduce((sum, adv) => {
+        let singleCost = 0
+        
+        // Se houver modificadores selecionados, usa apenas a soma dos modificadores
+        if (adv.selectedModifiers && adv.selectedModifiers.length > 0) {
+          const originalAdvantage = advantages.find(a => a.name === adv.name)
+          if (originalAdvantage && originalAdvantage.modifiers) {
+            const modifierCost = adv.selectedModifiers.reduce((modSum, modId) => {
+              const modifier = originalAdvantage.modifiers.find(m => m.id === modId)
+              return modSum + (modifier ? modifier.costModifier : 0)
+            }, 0)
+            singleCost = Math.max(1, modifierCost) // Mínimo de 1 ponto
+          }
+        } else {
+          // Se não houver modificadores, usa o custo base
+          const baseCost = adv.cost || 0
+          singleCost = Math.max(1, baseCost) // Mínimo de 1 ponto
+        }
+        
+        // Multiplicar pela quantidade se houver
+        const quantity = adv.quantity || 1
+        return sum + (singleCost * quantity)
+      }, 0)
     },
     disadvantagesCost() {
       if (!this.character.disadvantages) return 0
@@ -783,6 +992,11 @@ export default {
     },
     isAdvantageSelected(advantageName) {
       if (!this.character.advantages) return false
+      // Para vantagens que podem ser compradas múltiplas vezes, sempre mostra como disponível
+      const advantage = advantages.find(a => a.name === advantageName)
+      if (advantage && advantage.purchasableMultiple) {
+        return false // Sempre disponível para adicionar mais
+      }
       return this.character.advantages.some(adv => adv.name === advantageName)
     },
     toggleAdvantage(advantage) {
@@ -790,25 +1004,188 @@ export default {
         this.character.advantages = []
       }
       
+      // Para vantagens que podem ser compradas múltiplas vezes, sempre adiciona (não remove)
+      if (advantage.purchasableMultiple) {
+        // Verificar se a vantagem tem modificadores
+        if (advantage.modifiers && advantage.modifiers.length > 0) {
+          // Abrir modal de modificadores (com quantidade se aplicável)
+          this.advantageForModifiers = advantage
+          this.selectedModifiers = []
+          this.advantageQuantity = 1
+          this.showModifiersModal = true
+        } else {
+          // Abrir modal de quantidade
+          this.advantageForQuantity = advantage
+          this.advantageQuantity = 1
+          this.showQuantityModal = true
+        }
+        return
+      }
+      
+      // Para vantagens normais, verificar se já está selecionada
       const index = this.character.advantages.findIndex(adv => adv.name === advantage.name)
       
       if (index >= 0) {
         // Remover vantagem
         this.character.advantages.splice(index, 1)
+        this.saveToCookie()
       } else {
-        // Adicionar vantagem se tiver pontos suficientes
-        if (this.canAffordAdvantage(advantage)) {
-          this.character.advantages.push({ ...advantage })
+        // Verificar se a vantagem tem modificadores
+        if (advantage.modifiers && advantage.modifiers.length > 0) {
+          // Abrir modal de modificadores
+          this.advantageForModifiers = advantage
+          this.selectedModifiers = []
+          this.showModifiersModal = true
+        } else {
+          // Adicionar vantagem diretamente se não tiver modificadores
+          if (this.canAffordAdvantage(advantage)) {
+            this.character.advantages.push({ ...advantage })
+            this.saveToCookie()
+          }
         }
       }
-      
-      this.saveToCookie()
     },
     removeAdvantage(index) {
       if (this.character.advantages) {
         this.character.advantages.splice(index, 1)
         this.saveToCookie()
       }
+    },
+    // Métodos para gerenciar modificadores
+    calculateAdvantageCostWithModifiers(advantage, selectedModifierIds = []) {
+      if (!advantage) return 0
+      
+      // Se houver modificadores selecionados, usa apenas a soma dos modificadores
+      if (advantage.modifiers && selectedModifierIds.length > 0) {
+        const modifierCost = selectedModifierIds.reduce((sum, modId) => {
+          const modifier = advantage.modifiers.find(m => m.id === modId)
+          return sum + (modifier ? modifier.costModifier : 0)
+        }, 0)
+        return Math.max(1, modifierCost) // Mínimo de 1 ponto
+      }
+      
+      // Se não houver modificadores, usa o custo base
+      const baseCost = advantage.cost || 0
+      return Math.max(1, baseCost) // Mínimo de 1 ponto
+    },
+    toggleModifier(modifierId) {
+      const index = this.selectedModifiers.indexOf(modifierId)
+      if (index >= 0) {
+        this.selectedModifiers.splice(index, 1)
+      } else {
+        this.selectedModifiers.push(modifierId)
+      }
+    },
+    isModifierSelected(modifierId) {
+      return this.selectedModifiers.includes(modifierId)
+    },
+    canAffordAdvantageWithModifiers() {
+      if (!this.advantageForModifiers) return false
+      const singleCost = this.calculateAdvantageCostWithModifiers(
+        this.advantageForModifiers,
+        this.selectedModifiers
+      )
+      const quantity = this.advantageForModifiers.purchasableMultiple ? this.advantageQuantity : 1
+      const totalCost = singleCost * quantity
+      return this.remainingPoints >= totalCost
+    },
+    confirmAdvantageWithModifiers() {
+      if (!this.advantageForModifiers) return
+      
+      const advantageToAdd = {
+        ...this.advantageForModifiers,
+        selectedModifiers: [...this.selectedModifiers]
+      }
+      
+      // Se a vantagem pode ser comprada múltiplas vezes, adicionar quantidade
+      if (this.advantageForModifiers.purchasableMultiple) {
+        advantageToAdd.quantity = this.advantageQuantity
+      }
+      
+      // Remover propriedades que não precisam ser salvas
+      delete advantageToAdd.modifiers
+      delete advantageToAdd.purchasableMultiple
+      
+      if (this.canAffordAdvantageWithModifiers()) {
+        this.character.advantages.push(advantageToAdd)
+        this.saveToCookie()
+        this.closeModifiersModal()
+      }
+    },
+    closeModifiersModal() {
+      this.showModifiersModal = false
+      this.advantageForModifiers = null
+      this.selectedModifiers = []
+    },
+    // Métodos para gerenciar quantidade
+    canAffordAdvantageWithQuantity() {
+      if (!this.advantageForQuantity) return false
+      const singleCost = this.advantageForQuantity.cost || 0
+      const totalCost = singleCost * this.advantageQuantity
+      return this.remainingPoints >= totalCost
+    },
+    confirmAdvantageWithQuantity() {
+      if (!this.advantageForQuantity) return
+      
+      const advantageToAdd = {
+        ...this.advantageForQuantity,
+        quantity: this.advantageQuantity
+      }
+      
+      // Remover a propriedade purchasableMultiple do objeto salvo
+      delete advantageToAdd.purchasableMultiple
+      
+      if (this.canAffordAdvantageWithQuantity()) {
+        this.character.advantages.push(advantageToAdd)
+        this.saveToCookie()
+        this.closeQuantityModal()
+      }
+    },
+    closeQuantityModal() {
+      this.showQuantityModal = false
+      this.advantageForQuantity = null
+      this.advantageQuantity = 1
+    },
+    increaseQuantity() {
+      if (this.advantageForQuantity) {
+        this.advantageQuantity++
+      }
+    },
+    decreaseQuantity() {
+      if (this.advantageQuantity > 1) {
+        this.advantageQuantity--
+      }
+    },
+    getAdvantageTotalCost(advantage) {
+      let singleCost = 0
+      
+      // Se houver modificadores selecionados, usa apenas a soma dos modificadores
+      if (advantage.selectedModifiers && advantage.selectedModifiers.length > 0) {
+        const originalAdvantage = advantages.find(a => a.name === advantage.name)
+        if (originalAdvantage && originalAdvantage.modifiers) {
+          const modifierCost = advantage.selectedModifiers.reduce((sum, modId) => {
+            const modifier = originalAdvantage.modifiers.find(m => m.id === modId)
+            return sum + (modifier ? modifier.costModifier : 0)
+          }, 0)
+          singleCost = Math.max(1, modifierCost) // Mínimo de 1 ponto
+        }
+      } else {
+        // Se não houver modificadores, usa o custo base
+        const baseCost = advantage.cost || 0
+        singleCost = Math.max(1, baseCost) // Mínimo de 1 ponto
+      }
+      
+      // Multiplicar pela quantidade se houver
+      const quantity = advantage.quantity || 1
+      return singleCost * quantity
+    },
+    getModifierName(advantageName, modifierId) {
+      const originalAdvantage = advantages.find(a => a.name === advantageName)
+      if (originalAdvantage && originalAdvantage.modifiers) {
+        const modifier = originalAdvantage.modifiers.find(m => m.id === modifierId)
+        return modifier ? modifier.name : modifierId
+      }
+      return modifierId
     },
     increaseAttribute(attr) {
       if (this.remainingPoints > 0 && this.character.attributes[attr] < 5) {
@@ -1087,6 +1464,13 @@ export default {
     },
     closeDisadvantageDescription() {
       this.selectedDisadvantageForDescription = null
+    },
+    // Popover de descrição de vantagem única (raça)
+    showUniqueAdvantageDescription(uniqueAdv) {
+      this.selectedUniqueAdvantageForDescription = uniqueAdv
+    },
+    closeUniqueAdvantageDescription() {
+      this.selectedUniqueAdvantageForDescription = null
     },
     formatDescription(description) {
       if (!description) return []
@@ -1443,16 +1827,47 @@ export default {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.advantage-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
 .advantage-name {
   font-weight: 600;
   color: #2d3748;
-  flex: 1;
+  margin-bottom: 4px;
 }
 
 .advantage-cost {
   color: #4a5568;
   font-weight: 600;
-  margin-right: 10px;
+  margin-bottom: 4px;
+}
+
+.advantage-modifiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  align-items: center;
+}
+
+.modifiers-label {
+  font-size: 0.85em;
+  color: #718096;
+  font-weight: 500;
+}
+
+.modifier-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #e2e8f0;
+  border-radius: 12px;
+  font-size: 0.8em;
+  color: #4a5568;
+  font-weight: 500;
 }
 
 .btn-remove-advantage {
@@ -1847,6 +2262,260 @@ export default {
 .modal-points-info strong {
   color: #2d3748;
   font-size: 1.1rem;
+}
+
+/* Modifiers Modal Styles */
+.modifiers-info {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f7fafc;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+}
+
+.modifiers-info p {
+  margin: 8px 0;
+  color: #4a5568;
+}
+
+.modifiers-info .error-message {
+  color: #c53030;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.modifiers-list {
+  margin-top: 20px;
+}
+
+.modifiers-list h3 {
+  margin-bottom: 15px;
+  color: #2d3748;
+  font-size: 1.1rem;
+}
+
+.modifier-option {
+  padding: 15px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.modifier-option:hover {
+  border-color: #4299e1;
+  box-shadow: 0 2px 4px rgba(66, 153, 225, 0.1);
+}
+
+.modifier-option.selected {
+  border-color: #4299e1;
+  background: #ebf8ff;
+}
+
+.modifier-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.modifier-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modifier-name-wrapper input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.modifier-name {
+  font-weight: 600;
+  color: #2d3748;
+  font-size: 1rem;
+}
+
+.modifier-cost {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cost-modifier {
+  padding: 4px 10px;
+  background: #4299e1;
+  color: white;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.pm-modifier {
+  padding: 4px 10px;
+  background: #805ad5;
+  color: white;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.modifier-description {
+  color: #4a5568;
+  font-size: 0.9em;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.modifier-restriction {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #fff5cd;
+  border-left: 3px solid #f6ad55;
+  border-radius: 4px;
+  font-size: 0.85em;
+  color: #744210;
+}
+
+.btn-cancel {
+  padding: 10px 20px;
+  background: #cbd5e0;
+  color: #2d3748;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #a0aec0;
+}
+
+.btn-confirm {
+  padding: 10px 20px;
+  background: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-confirm:hover:not(:disabled) {
+  background: #3182ce;
+}
+
+.btn-confirm:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Quantity Modal Styles */
+.quantity-info {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f7fafc;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+}
+
+.quantity-info p {
+  margin: 8px 0;
+  color: #4a5568;
+}
+
+.quantity-selector {
+  margin-top: 20px;
+}
+
+.quantity-selector label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-quantity {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #cbd5e0;
+  background: white;
+  border-radius: 6px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2d3748;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-quantity:hover:not(:disabled) {
+  background: #4299e1;
+  border-color: #4299e1;
+  color: white;
+}
+
+.btn-quantity:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quantity-input {
+  width: 80px;
+  height: 40px;
+  text-align: center;
+  border: 2px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: #4299e1;
+}
+
+.quantity-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #4299e1;
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75em;
+  font-weight: 600;
+}
+
+.quantity-selector-inline {
+  margin: 15px 0;
+  padding: 15px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.quantity-selector-inline label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+  color: #2d3748;
 }
 
 .btn-close {
