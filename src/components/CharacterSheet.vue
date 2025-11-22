@@ -34,17 +34,6 @@
             />
           </div>
           <div class="form-group">
-            <label for="level">Nível:</label>
-            <input
-              id="level"
-              type="number"
-              v-model.number="character.level"
-              @input="saveToCookie"
-              min="1"
-              placeholder="1"
-            />
-          </div>
-          <div class="form-group">
             <label for="experience-points">Pontos de Experiência (PEs):</label>
             <input
               id="experience-points"
@@ -849,7 +838,6 @@ export default {
       advantageQuantity: 1, // Quantidade selecionada temporariamente
       character: {
         name: '',
-        level: 1,
         attributes: {
           forca: 0,
           habilidade: 0,
@@ -1229,6 +1217,10 @@ export default {
         }
         if (savedData.character) {
           this.character = { ...this.character, ...savedData.character }
+          // Remover level se existir (campo removido do sistema)
+          if (this.character.level !== undefined) {
+            delete this.character.level
+          }
           // Garantir que todos os atributos existam
           if (!this.character.attributes) {
             this.character.attributes = {
@@ -1275,7 +1267,6 @@ export default {
         this.totalPoints = 0
         this.character = {
           name: '',
-          level: 1,
           attributes: {
             forca: 0,
             habilidade: 0,
