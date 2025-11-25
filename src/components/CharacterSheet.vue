@@ -1,5 +1,36 @@
 <template>
   <div class="character-sheet">
+    <!-- Sistema de Tabs -->
+    <div class="tabs-container">
+      <div class="tabs-list">
+        <div
+          v-for="(char, index) in characters"
+          :key="index"
+          :class="['tab-item', { active: activeTabIndex === index }]"
+          @click="switchTab(index)"
+        >
+          <span class="tab-name">{{ getTabName(char) }}</span>
+          <button
+            v-if="characters.length > 1"
+            type="button"
+            class="tab-close"
+            @click.stop="closeTab(index)"
+            title="Fechar aba"
+          >
+            ×
+          </button>
+        </div>
+        <button
+          type="button"
+          class="tab-add"
+          @click="addNewTab"
+          title="Nova ficha"
+        >
+          +
+        </button>
+      </div>
+    </div>
+
     <div class="sheet-header">
       <h1>Ficha de Personagem</h1>
       <div class="points-control">
@@ -7,8 +38,7 @@
         <input
           id="total-points"
           type="number"
-          v-model.number="totalPoints"
-          min="0"
+          v-model.number="currentCharacterData.totalPoints"
           @input="updateTotalPoints"
           class="points-input"
         />
@@ -62,13 +92,17 @@
           >
             <div class="attribute-header">
               <label :for="attr">{{ formatAttributeName(attr) }}:</label>
-              <div class="attribute-value">{{ value }}</div>
+              <div class="attribute-value-wrapper">
+                <div class="attribute-value">{{ value }}</div>
+                <span v-if="getAttributeBonusLabel(attr)" class="attribute-bonus-badge">
+                  {{ getAttributeBonusLabel(attr) }}
+                </span>
+              </div>
             </div>
             <div class="attribute-controls">
               <button
                 type="button"
                 @click="decreaseAttribute(attr)"
-                :disabled="value <= 0"
                 class="btn-control btn-decrease"
               >
                 -
@@ -78,14 +112,13 @@
                 type="number"
                 v-model.number="character.attributes[attr]"
                 @input="updateAttribute(attr)"
-                min="0"
                 max="5"
                 class="attribute-input"
               />
               <button
                 type="button"
                 @click="increaseAttribute(attr)"
-                :disabled="remainingPoints <= 0 || value >= 5"
+                :disabled="value >= 5"
                 class="btn-control btn-increase"
               >
                 +
@@ -158,7 +191,28 @@
                   {{ advantage.name }}
                   <span v-if="advantage.quantity && advantage.quantity > 1" class="quantity-badge">x{{ advantage.quantity }}</span>
                 </span>
-                <span class="advantage-cost">{{ getAdvantageTotalCost(advantage) }} pts</span>
+                <span class="advantage-cost">
+                  <span v-if="advantage.freeFromRace" class="free-badge">
+                    <span class="free-label">Grátis</span>
+                    <span class="free-source">({{ advantage.freeFromRace }})</span>
+                  </span>
+                  <span v-else-if="advantage.alienBonus" class="alien-bonus-cost">
+                    <span v-if="advantage.cost === 0" class="free-badge">
+                      <span class="free-label">Grátis</span>
+                      <span class="free-source">(Alien)</span>
+                    </span>
+                    <span v-else class="discounted-cost">
+                      <span class="original-cost">{{ advantage.originalCost || 2 }} pts</span>
+                      <span class="current-cost">{{ advantage.cost }} pt{{ advantage.cost > 1 ? 's' : '' }}</span>
+                      <span class="discount-badge">Desconto</span>
+                    </span>
+                  </span>
+                  <span v-else-if="advantage.discountedFromRace" class="discounted-cost">
+                    <span class="current-cost">{{ getAdvantageTotalCost(advantage) }} pts</span>
+                    <span class="discount-badge">Desconto {{ advantage.discountedFromRace }}</span>
+                  </span>
+                  <span v-else>{{ getAdvantageTotalCost(advantage) }} pts</span>
+                </span>
                 <div v-if="advantage.selectedModifiers && advantage.selectedModifiers.length > 0" class="advantage-modifiers">
                   <span class="modifiers-label">Modificadores:</span>
                   <span
@@ -254,6 +308,40 @@
         </section>
       </div>
 
+      <!-- Magias -->
+      <section class="sheet-section">
+        <div class="section-header-with-button">
+          <h2>Magias</h2>
+          <button type="button" @click="showSpellsModal = true" class="btn-add-advantage">
+            + Adicionar Magia
+          </button>
+        </div>
+        <div v-if="character.spells && character.spells.length > 0" class="advantages-list-main">
+          <div
+            v-for="(spell, index) in character.spells"
+            :key="index"
+            class="advantage-item"
+          >
+            <div class="advantage-info">
+              <span class="advantage-name">{{ spell.name }}</span>
+              <span class="advantage-cost">{{ spell.cost }}</span>
+              <span class="advantage-group">{{ spell.school }}</span>
+            </div>
+            <button
+              type="button"
+              @click="removeSpell(index)"
+              class="btn-remove-advantage"
+              title="Remover magia"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <div v-else class="no-advantages">
+          Nenhuma magia selecionada. Clique em "Adicionar Magia" para começar.
+        </div>
+      </section>
+
       <!-- Informações Adicionais -->
       <section class="sheet-section">
         <h2>Informações Adicionais</h2>
@@ -281,8 +369,21 @@
         </div>
       </section>
 
-      <!-- Botão Reset -->
+      <!-- Botões de Ação -->
       <div class="sheet-actions">
+        <button type="button" @click="exportCharacterSheet" class="btn-export">
+          Salvar Ficha
+        </button>
+        <button type="button" @click="triggerImport" class="btn-import">
+          Importar Ficha
+        </button>
+        <input
+          ref="fileInput"
+          type="file"
+          accept=".json"
+          @change="importCharacterSheet"
+          style="display: none"
+        />
         <button type="button" @click="resetSheet" class="btn-reset">
           Resetar Ficha
         </button>
@@ -290,516 +391,152 @@
     </div>
 
     <!-- Modal de Vantagens -->
-    <div v-if="showAdvantagesModal" class="modal-overlay" @click.self="showAdvantagesModal = false">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Selecionar Vantagens</h2>
-          <button type="button" @click="showAdvantagesModal = false" class="btn-close-modal">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="search-box">
-            <input
-              type="text"
-              v-model="advantageSearch"
-              placeholder="Buscar vantagem..."
-              class="search-input"
-            />
-          </div>
-          <div class="advantages-grid">
-            <div
-              v-for="advantage in filteredAdvantages"
-              :key="advantage.name"
-              class="advantage-option"
-              :class="{ 'selected': isAdvantageSelected(advantage.name), 'disabled': !canAffordAdvantage(advantage) }"
-              @click="toggleAdvantage(advantage)"
-            >
-              <div class="advantage-option-header">
-                <div class="advantage-option-name-wrapper">
-                  <span class="advantage-option-name">{{ advantage.name }}</span>
-                  <button
-                    v-if="advantage.description"
-                    type="button"
-                    class="advantage-info-btn"
-                    @click.stop="showAdvantageDescription(advantage)"
-                    title="Ver descrição completa"
-                  >
-                    🔍
-                  </button>
-                </div>
-                <span class="advantage-option-cost">{{ advantage.cost }} pts</span>
-              </div>
-              <div v-if="advantage.summary" class="advantage-option-summary">
-                {{ advantage.summary }}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <div class="modal-points-info">
-            Pontos gastos em vantagens: <strong>{{ advantagesCost }}</strong>
-          </div>
-          <button type="button" @click="showAdvantagesModal = false" class="btn-close">
-            Fechar
-          </button>
-        </div>
-      </div>
-    </div>
+    <AdvantagesModal
+      :show="showAdvantagesModal"
+      :character="character"
+      :advantages-cost="advantagesCost"
+      :remaining-points="remainingPoints"
+      :get-advantage-cost-with-race-discount="getAdvantageCostWithRaceDiscount"
+      :is-advantage-selected="isAdvantageSelected"
+      @close="showAdvantagesModal = false"
+      @toggle-advantage="toggleAdvantage"
+      @show-description="showAdvantageDescription"
+    />
 
     <!-- Modal de Desvantagens -->
-    <div v-if="showDisadvantagesModal" class="modal-overlay" @click.self="showDisadvantagesModal = false">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Selecionar Desvantagens</h2>
-          <button type="button" @click="showDisadvantagesModal = false" class="btn-close-modal">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="search-box">
-            <input
-              type="text"
-              v-model="disadvantageSearch"
-              placeholder="Buscar desvantagem..."
-              class="search-input"
-            />
-          </div>
-          <div class="advantages-grid">
-            <div
-              v-for="disadvantage in filteredDisadvantages"
-              :key="disadvantage.name"
-              class="advantage-option"
-              :class="{ 'selected': isDisadvantageSelected(disadvantage.name) }"
-              @click="toggleDisadvantage(disadvantage)"
-            >
-              <div class="advantage-option-header">
-                <div class="advantage-option-name-wrapper">
-                  <span class="advantage-option-name">{{ disadvantage.name }}</span>
-                  <button
-                    v-if="disadvantage.description"
-                    type="button"
-                    class="advantage-info-btn"
-                    @click.stop="showDisadvantageDescription(disadvantage)"
-                    title="Ver descrição completa"
-                  >
-                    🔍
-                  </button>
-                </div>
-                <span class="advantage-option-cost">{{ disadvantage.cost }} pts</span>
-              </div>
-              <div v-if="disadvantage.summary" class="advantage-option-summary">
-                {{ disadvantage.summary }}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <div class="modal-points-info">
-            Pontos ganhos com desvantagens: <strong>{{ disadvantagesCost }}</strong>
-          </div>
-          <button type="button" @click="showDisadvantagesModal = false" class="btn-close">
-            Fechar
-          </button>
-        </div>
-      </div>
-    </div>
+    <DisadvantagesModal
+      :show="showDisadvantagesModal"
+      :disadvantages-cost="disadvantagesCost"
+      :is-disadvantage-selected="isDisadvantageSelected"
+      @close="showDisadvantagesModal = false"
+      @toggle-disadvantage="toggleDisadvantage"
+      @show-description="showDisadvantageDescription"
+    />
 
     <!-- Popover de Descrição de Desvantagem -->
-    <div
-      v-if="selectedDisadvantageForDescription"
-      class="popover-overlay"
-      @click="closeDisadvantageDescription"
-    >
-      <div class="popover-content" @click.stop>
-        <div class="popover-header">
-          <h3>{{ selectedDisadvantageForDescription.name }}</h3>
-          <button
-            type="button"
-            @click="closeDisadvantageDescription"
-            class="popover-close-btn"
-          >
-            ×
-          </button>
-        </div>
-        <div class="popover-body">
-          <div class="popover-description">
-            <p
-              v-for="(paragraph, index) in formatDescription(selectedDisadvantageForDescription.description)"
-              :key="index"
-              class="popover-paragraph"
-            >
-              {{ paragraph }}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <DisadvantageDescriptionPopover
+      :item="selectedDisadvantageForDescription"
+      :format-description="formatDescription"
+      @close="closeDisadvantageDescription"
+    />
 
     <!-- Modal de Vantagens Únicas -->
-    <div v-if="showUniqueAdvantageModal" class="modal-overlay" @click.self="showUniqueAdvantageModal = false">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Selecionar Vantagem Única (Raça)</h2>
-          <button type="button" @click="showUniqueAdvantageModal = false" class="btn-close-modal">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="search-box">
-            <input
-              type="text"
-              v-model="uniqueAdvantageSearch"
-              placeholder="Buscar raça..."
-              class="search-input"
-            />
-          </div>
-          <div class="advantages-grid">
-            <div
-              v-for="uniqueAdv in filteredUniqueAdvantages"
-              :key="uniqueAdv.name"
-              class="advantage-option"
-              :class="{ 'selected': character.uniqueAdvantage && character.uniqueAdvantage.name === uniqueAdv.name, 'disabled': !canAffordUniqueAdvantage(uniqueAdv) }"
-              @click="selectUniqueAdvantage(uniqueAdv)"
-            >
-              <div class="advantage-option-header">
-                <div class="advantage-option-name-wrapper">
-                  <span class="advantage-option-name">{{ uniqueAdv.name }}</span>
-                  <button
-                    v-if="uniqueAdv.fullDescription"
-                    type="button"
-                    class="advantage-info-btn"
-                    @click.stop="showUniqueAdvantageDescription(uniqueAdv)"
-                    title="Ver descrição completa"
-                  >
-                    🔍
-                  </button>
-                </div>
-                <span class="advantage-option-cost">{{ uniqueAdv.cost }} pts</span>
-              </div>
-              <div class="advantage-option-group">{{ uniqueAdv.group }}</div>
-              <div v-if="uniqueAdv.description" class="advantage-option-description">{{ uniqueAdv.description }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" @click="showUniqueAdvantageModal = false" class="btn-close">
-            Fechar
-          </button>
-        </div>
-      </div>
-    </div>
+    <UniqueAdvantageModal
+      :show="showUniqueAdvantageModal"
+      :character="character"
+      :remaining-points="remainingPoints"
+      :can-afford-unique-advantage="canAffordUniqueAdvantage"
+      @close="showUniqueAdvantageModal = false"
+      @select-unique-advantage="selectUniqueAdvantage"
+      @show-description="showUniqueAdvantageDescription"
+    />
 
     <!-- Modal de Perícias -->
-    <div v-if="showSkillsModal" class="modal-overlay" @click.self="closeSkillsModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Selecionar Perícias</h2>
-          <button type="button" @click="closeSkillsModal" class="btn-close-modal">×</button>
-        </div>
-        <div class="modal-body">
-          <!-- Seleção de modo: Perícia Completa ou Especializações -->
-          <div class="skills-mode-selector">
-            <button
-              type="button"
-              @click="skillsMode = 'full'"
-              :class="['mode-button', { 'active': skillsMode === 'full' }]"
-            >
-              Perícia Completa (2 pts)
-            </button>
-            <button
-              type="button"
-              @click="skillsMode = 'specializations'"
-              :class="['mode-button', { 'active': skillsMode === 'specializations' }]"
-            >
-              3 Especializações (1 pt)
-            </button>
-          </div>
-
-          <!-- Modo: Perícia Completa -->
-          <div v-if="skillsMode === 'full'" class="skills-full-mode">
-            <div class="search-box">
-              <input
-                type="text"
-                v-model="skillSearch"
-                placeholder="Buscar perícia..."
-                class="search-input"
-              />
-            </div>
-            <div class="advantages-grid">
-              <div
-                v-for="skill in filteredSkills"
-                :key="skill.name"
-                class="advantage-option"
-                :class="{ 
-                  'selected': isFullSkillSelected(skill.name),
-                  'disabled': !canAffordSkill(skill, 'full')
-                }"
-                @click="toggleFullSkill(skill)"
-              >
-                <div class="advantage-option-header">
-                  <span class="advantage-option-name">{{ skill.name }}</span>
-                  <span class="advantage-option-cost">2 pts</span>
-                </div>
-                <div v-if="skill.description" class="advantage-option-description">{{ skill.description }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Modo: Especializações -->
-          <div v-if="skillsMode === 'specializations'" class="skills-specializations-mode">
-            <div class="search-box">
-              <input
-                type="text"
-                v-model="specializationSearch"
-                placeholder="Buscar especialização..."
-                class="search-input"
-              />
-            </div>
-            <div class="specializations-counter">
-              Especializações selecionadas: <strong>{{ selectedSpecializations.length }}/3</strong>
-            </div>
-            <div class="specializations-list">
-              <div
-                v-for="skill in allSkills"
-                :key="skill.name"
-                class="skill-group"
-              >
-                <h3 class="skill-group-title">{{ skill.name }}</h3>
-                <div class="specializations-grid">
-                  <label
-                    v-for="spec in getFilteredSpecializations(skill)"
-                    :key="spec"
-                    class="specialization-item"
-                    :class="{ 
-                      'disabled': !canSelectSpecialization(spec),
-                      'already-acquired': isSpecializationAlreadyAcquired(spec)
-                    }"
-                  >
-                    <input
-                      type="checkbox"
-                      :value="spec"
-                      :checked="isSpecializationSelected(spec)"
-                      :disabled="!canSelectSpecialization(spec)"
-                      @change="toggleSpecialization(spec, skill.name)"
-                    />
-                    <span class="specialization-name">
-                      {{ spec }}
-                      <span v-if="isSpecializationAlreadyAcquired(spec)" class="already-acquired-badge">(já adquirida)</span>
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-            <div class="specializations-actions">
-              <button
-                type="button"
-                @click="confirmSpecializations"
-                :disabled="selectedSpecializations.length !== 3 || !canAffordSpecializations"
-                class="btn-confirm-specializations"
-              >
-                Confirmar 3 Especializações (1 pt)
-              </button>
-              <button
-                type="button"
-                @click="clearSpecializations"
-                class="btn-clear-specializations"
-              >
-                Limpar Seleção
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <div class="modal-points-info">
-            Pontos gastos em perícias: <strong>{{ skillsCost }}</strong>
-          </div>
-          <button type="button" @click="closeSkillsModal" class="btn-close">
-            Fechar
-          </button>
-        </div>
-      </div>
-    </div>
+    <SkillsModal
+      :show="showSkillsModal"
+      :character="character"
+      :skills-cost="skillsCost"
+      :remaining-points="remainingPoints"
+      :is-full-skill-selected="isFullSkillSelected"
+      :can-afford-skill="canAffordSkill"
+      :is-specialization-already-acquired="isSpecializationAlreadyAcquired"
+      @close="closeSkillsModal"
+      @toggle-full-skill="toggleFullSkill"
+      @confirm-specializations="handleConfirmSpecializations"
+    />
 
     <!-- Popover de Descrição de Vantagem -->
-    <div
-      v-if="selectedAdvantageForDescription"
-      class="popover-overlay"
-      @click="closeAdvantageDescription"
-    >
-      <div class="popover-content" @click.stop>
-        <div class="popover-header">
-          <h3>{{ selectedAdvantageForDescription.name }}</h3>
-          <button
-            type="button"
-            @click="closeAdvantageDescription"
-            class="popover-close-btn"
-          >
-            ×
-          </button>
-        </div>
-        <div class="popover-body">
-          <div class="popover-description">
-            <p
-              v-for="(paragraph, index) in formatDescription(selectedAdvantageForDescription.description)"
-              :key="index"
-              class="popover-paragraph"
-            >
-              {{ paragraph }}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <AdvantageDescriptionPopover
+      :item="selectedAdvantageForDescription"
+      :format-description="formatDescription"
+      @close="closeAdvantageDescription"
+    />
 
     <!-- Modal de Quantidade de Vantagem -->
-    <div v-if="showQuantityModal && advantageForQuantity" class="modal-overlay" @click.self="closeQuantityModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Adicionar {{ advantageForQuantity.name }}</h2>
-          <button type="button" @click="closeQuantityModal" class="btn-close-modal">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="quantity-info">
-            <p><strong>Custo por unidade:</strong> {{ advantageForQuantity.cost }} pontos</p>
-            <p><strong>Custo total:</strong> {{ (advantageForQuantity.cost || 0) * advantageQuantity }} pontos</p>
-            <p v-if="!canAffordAdvantageWithQuantity()" class="error-message">
-              Pontos insuficientes. Você precisa de {{ (advantageForQuantity.cost || 0) * advantageQuantity }} pontos, mas tem apenas {{ remainingPoints }}.
-            </p>
-          </div>
-          <div class="quantity-selector">
-            <label>Quantidade:</label>
-            <div class="quantity-controls">
-              <button type="button" @click="decreaseQuantity" class="btn-quantity" :disabled="advantageQuantity <= 1">−</button>
-              <input
-                type="number"
-                v-model.number="advantageQuantity"
-                min="1"
-                class="quantity-input"
-              />
-              <button type="button" @click="increaseQuantity" class="btn-quantity">+</button>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" @click="closeQuantityModal" class="btn-cancel">Cancelar</button>
-          <button
-            type="button"
-            @click="confirmAdvantageWithQuantity"
-            class="btn-confirm"
-            :disabled="!canAffordAdvantageWithQuantity()"
-          >
-            Confirmar ({{ (advantageForQuantity.cost || 0) * advantageQuantity }} pts)
-          </button>
-        </div>
-      </div>
-    </div>
+    <QuantityModal
+      :show="showQuantityModal"
+      :advantage="advantageForQuantity"
+      :character="character"
+      :remaining-points="remainingPoints"
+      :get-advantage-cost-with-race-discount="getAdvantageCostWithRaceDiscount"
+      @close="closeQuantityModal"
+      @confirm="handleConfirmAdvantageWithQuantity"
+    />
 
     <!-- Modal de Modificadores de Vantagem -->
-    <div v-if="showModifiersModal && advantageForModifiers" class="modal-overlay" @click.self="closeModifiersModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Configurar {{ advantageForModifiers.name }}</h2>
-          <button type="button" @click="closeModifiersModal" class="btn-close-modal">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="modifiers-info">
-            <p v-if="selectedModifiers.length === 0"><strong>Custo base:</strong> {{ advantageForModifiers.cost }} pontos</p>
-            <p v-else><strong>Custo por unidade:</strong> {{ calculateAdvantageCostWithModifiers(advantageForModifiers, selectedModifiers) }} pontos</p>
-            <div v-if="advantageForModifiers.purchasableMultiple" class="quantity-selector-inline">
-              <label>Quantidade:</label>
-              <div class="quantity-controls">
-                <button type="button" @click="decreaseQuantity" class="btn-quantity" :disabled="advantageQuantity <= 1">−</button>
-                <input
-                  type="number"
-                  v-model.number="advantageQuantity"
-                  min="1"
-                  class="quantity-input"
-                />
-                <button type="button" @click="increaseQuantity" class="btn-quantity">+</button>
-              </div>
-            </div>
-            <p><strong>Custo total:</strong> {{ calculateAdvantageCostWithModifiers(advantageForModifiers, selectedModifiers) * (advantageForModifiers.purchasableMultiple ? advantageQuantity : 1) }} pontos</p>
-            <p v-if="!canAffordAdvantageWithModifiers()" class="error-message">
-              Pontos insuficientes. Você precisa de {{ calculateAdvantageCostWithModifiers(advantageForModifiers, selectedModifiers) * (advantageForModifiers.purchasableMultiple ? advantageQuantity : 1) }} pontos, mas tem apenas {{ remainingPoints }}.
-            </p>
-          </div>
-          <div class="modifiers-list">
-            <h3>Modificadores Disponíveis</h3>
-            <div
-              v-for="modifier in advantageForModifiers.modifiers"
-              :key="modifier.id"
-              class="modifier-option"
-              :class="{ 'selected': isModifierSelected(modifier.id) }"
-              @click="toggleModifier(modifier.id)"
-            >
-              <div class="modifier-header">
-                <div class="modifier-name-wrapper">
-                  <input
-                    type="checkbox"
-                    :checked="isModifierSelected(modifier.id)"
-                    @change="toggleModifier(modifier.id)"
-                    @click.stop
-                  />
-                  <span class="modifier-name">{{ modifier.name }}</span>
-                </div>
-                <div class="modifier-cost">
-                  <span v-if="modifier.costModifier !== 0" class="cost-modifier">
-                    {{ modifier.costModifier > 0 ? '+' : '' }}{{ modifier.costModifier }} pts
-                  </span>
-                  <span v-if="modifier.pmModifier !== 0 && modifier.pmModifier !== undefined" class="pm-modifier">
-                    {{ modifier.pmModifier > 0 ? '+' : '' }}{{ modifier.pmModifier }} PM
-                  </span>
-                </div>
-              </div>
-              <div class="modifier-description">
-                {{ modifier.description }}
-              </div>
-              <div v-if="modifier.restrictions && modifier.restrictions.includes('pdfOnly')" class="modifier-restriction">
-                ⚠️ Apenas para ataques com Poder de Fogo (PdF)
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" @click="closeModifiersModal" class="btn-cancel">Cancelar</button>
-          <button
-            type="button"
-            @click="confirmAdvantageWithModifiers"
-            class="btn-confirm"
-            :disabled="!canAffordAdvantageWithModifiers()"
-          >
-            Confirmar ({{ calculateAdvantageCostWithModifiers(advantageForModifiers, selectedModifiers) * (advantageForModifiers.purchasableMultiple ? advantageQuantity : 1) }} pts)
-          </button>
-        </div>
-      </div>
-    </div>
+    <ModifiersModal
+      :show="showModifiersModal"
+      :advantage="advantageForModifiers"
+      :character="character"
+      :remaining-points="remainingPoints"
+      :get-advantage-cost-with-race-discount="getAdvantageCostWithRaceDiscount"
+      :calculate-advantage-cost-with-modifiers="calculateAdvantageCostWithModifiers"
+      @close="closeModifiersModal"
+      @confirm="handleConfirmAdvantageWithModifiers"
+    />
+
+    <!-- Modal de Magias -->
+    <SpellsModal
+      :show="showSpellsModal"
+      :is-spell-selected="isSpellSelected"
+      @close="showSpellsModal = false"
+      @toggle-spell="toggleSpell"
+      @show-description="showSpellDescription"
+    />
 
     <!-- Popover de Descrição de Vantagem Única (Raça) -->
-    <div
-      v-if="selectedUniqueAdvantageForDescription"
-      class="popover-overlay"
-      @click="closeUniqueAdvantageDescription"
-    >
-      <div class="popover-content" @click.stop>
-        <div class="popover-header">
-          <h3>{{ selectedUniqueAdvantageForDescription.name }}</h3>
-          <button
-            type="button"
-            @click="closeUniqueAdvantageDescription"
-            class="popover-close-btn"
-          >
-            ×
-          </button>
-        </div>
-        <div class="popover-body">
-          <div class="popover-description">
-            <p
-              v-for="(paragraph, index) in formatDescription(selectedUniqueAdvantageForDescription.fullDescription)"
-              :key="index"
-              class="popover-paragraph"
-            >
-              {{ paragraph }}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <UniqueAdvantageDescriptionPopover
+      :item="selectedUniqueAdvantageForDescription"
+      :format-description="formatDescription"
+      @close="closeUniqueAdvantageDescription"
+    />
+
+    <!-- Popover de Descrição de Magia -->
+    <SpellDescriptionPopover
+      :item="selectedSpellForDescription"
+      :format-description="formatDescription"
+      @close="closeSpellDescription"
+    />
+
+    <!-- Modal de Vantagens Gratuitas por Raça -->
+    <FreeAdvantagesModal
+      :show="showFreeAdvantagesModal"
+      :race="raceForFreeAdvantages"
+      @close="closeFreeAdvantagesModal"
+      @confirm="handleConfirmFreeAdvantages"
+    />
   </div>
+  
+  <!-- Modal de Vantagem Bônus do Alien -->
+  <AlienBonusModal
+    :show="showAlienBonusModal"
+    :character="character"
+    :advantages1-point="advantages1Point"
+    :advantages2-points="advantages2Points"
+    @close="closeAlienBonusModal"
+    @confirm="handleConfirmAlienBonus"
+    @show-description="showAdvantageDescription"
+  />
+  
+  <!-- Modal de Escolha de Atributo (Característica +1) -->
+  <AttributeChoiceModal
+    :show="showAttributeChoiceModal"
+    :race="raceForAttributeChoice"
+    :character="character"
+    :format-attribute-name="formatAttributeName"
+    @close="closeAttributeChoiceModal"
+    @confirm="handleConfirmAttributeChoice"
+  />
+
+  <!-- Modal de Confirmação -->
+  <ConfirmModal
+    :show="showConfirmModal"
+    :title="confirmModalTitle"
+    :message="confirmModalMessage"
+    :confirm-text="confirmModalConfirmText"
+    @confirm="handleConfirm"
+    @cancel="handleCancel"
+  />
 </template>
 
 <script>
@@ -808,63 +545,145 @@ import { advantages } from '../data/advantages'
 import { disadvantages } from '../data/disadvantages'
 import { skills } from '../data/skills'
 import { uniqueAdvantages } from '../data/uniqueAdvantages'
+import { spells } from '../data/spells'
+import AdvantagesModal from './modals/AdvantagesModal.vue'
+import DisadvantagesModal from './modals/DisadvantagesModal.vue'
+import UniqueAdvantageModal from './modals/UniqueAdvantageModal.vue'
+import SkillsModal from './modals/SkillsModal.vue'
+import QuantityModal from './modals/QuantityModal.vue'
+import ModifiersModal from './modals/ModifiersModal.vue'
+import SpellsModal from './modals/SpellsModal.vue'
+import FreeAdvantagesModal from './modals/FreeAdvantagesModal.vue'
+import AlienBonusModal from './modals/AlienBonusModal.vue'
+import AttributeChoiceModal from './modals/AttributeChoiceModal.vue'
+import AdvantageDescriptionPopover from './modals/AdvantageDescriptionPopover.vue'
+import DisadvantageDescriptionPopover from './modals/DisadvantageDescriptionPopover.vue'
+import UniqueAdvantageDescriptionPopover from './modals/UniqueAdvantageDescriptionPopover.vue'
+import SpellDescriptionPopover from './modals/SpellDescriptionPopover.vue'
+import ConfirmModal from './modals/ConfirmModal.vue'
 
 const COOKIE_NAME = 'character_sheet_data'
 
 export default {
   name: 'CharacterSheet',
+  components: {
+    AdvantagesModal,
+    DisadvantagesModal,
+    UniqueAdvantageModal,
+    SkillsModal,
+    QuantityModal,
+    ModifiersModal,
+    SpellsModal,
+    FreeAdvantagesModal,
+    AlienBonusModal,
+    AttributeChoiceModal,
+    AdvantageDescriptionPopover,
+    DisadvantageDescriptionPopover,
+    UniqueAdvantageDescriptionPopover,
+    SpellDescriptionPopover,
+    ConfirmModal
+  },
   data() {
+    const defaultCharacter = {
+      name: '',
+      attributes: {
+        forca: 0,
+        habilidade: 0,
+        resistencia: 0,
+        armadura: 0,
+        poderDeFogo: 0
+      },
+      advantages: [],
+      disadvantages: [],
+      uniqueAdvantage: null,
+      skills: [],
+      spells: [],
+      experiencePoints: 0,
+      background: '',
+      notes: ''
+    }
+
     return {
-      totalPoints: 0,
+      characters: [
+        {
+          totalPoints: 0,
+          character: { ...defaultCharacter }
+        }
+      ],
+      activeTabIndex: 0,
       showAdvantagesModal: false,
       showDisadvantagesModal: false,
       showSkillsModal: false,
       showUniqueAdvantageModal: false,
-      advantageSearch: '',
-      disadvantageSearch: '',
-      skillSearch: '',
-      uniqueAdvantageSearch: '',
+      showSpellsModal: false,
       selectedAdvantageForDescription: null,
       selectedDisadvantageForDescription: null,
       selectedUniqueAdvantageForDescription: null,
-      skillsMode: 'full', // 'full' ou 'specializations'
-      selectedSpecializations: [], // Array temporário para especializações sendo selecionadas
-      specializationSearch: '',
+      selectedSpellForDescription: null,
       showModifiersModal: false,
       advantageForModifiers: null, // Vantagem que está sendo configurada com modificadores
-      selectedModifiers: [], // IDs dos modificadores selecionados temporariamente
       showQuantityModal: false,
       advantageForQuantity: null, // Vantagem que está sendo configurada com quantidade
-      advantageQuantity: 1, // Quantidade selecionada temporariamente
-      character: {
-        name: '',
-        attributes: {
-          forca: 0,
-          habilidade: 0,
-          resistencia: 0,
-          armadura: 0,
-          poderDeFogo: 0
-        },
-        advantages: [],
-        disadvantages: [],
-        uniqueAdvantage: null,
-        skills: [],
-        experiencePoints: 0,
-        background: '',
-        notes: ''
-      }
+      showFreeAdvantagesModal: false,
+      raceForFreeAdvantages: null, // Raça que está concedendo vantagens gratuitas
+      showAlienBonusModal: false, // Modal para escolher vantagem bônus do Alien
+      showAttributeChoiceModal: false, // Modal para escolher atributo quando raça tem Característica +1
+      raceForAttributeChoice: null, // Raça que requer escolha de atributo
+      showConfirmModal: false,
+      confirmModalTitle: 'Confirmar ação',
+      confirmModalMessage: '',
+      confirmModalConfirmText: 'Confirmar',
+      confirmModalResolve: null // Promise resolver para confirmações assíncronas
     }
   },
   computed: {
+    currentCharacterData() {
+      return this.characters[this.activeTabIndex] || this.characters[0]
+    },
+    totalPoints: {
+      get() {
+        return this.currentCharacterData.totalPoints
+      },
+      set(value) {
+        this.currentCharacterData.totalPoints = value
+      }
+    },
+    character: {
+      get() {
+        return this.currentCharacterData.character
+      },
+      set(value) {
+        this.currentCharacterData.character = value
+      }
+    },
     calculatedPVs() {
-      const resistencia = this.character.attributes.resistencia || 0
-      if (resistencia === 0) return 1
-      return resistencia * 5
+      const resistenciaBase = this.character.attributes.resistencia || 0
+      const resistenciaBonus = this.getAttributeBonus('resistencia') || 0
+      const resistenciaTotal = resistenciaBase + resistenciaBonus
+      if (resistenciaTotal === 0) return 1
+      return resistenciaTotal * 5
+    },
+    advantages1Point() {
+      // Retorna vantagens de 1 ponto que ainda não foram adicionadas
+      const addedNames = this.character.advantages ? this.character.advantages.map(a => a.name) : []
+      return advantages.filter(adv => adv.cost === 1 && !addedNames.includes(adv.name))
+    },
+    advantages2Points() {
+      // Retorna vantagens de 2 pontos (exceto perícias) que ainda não foram adicionadas
+      const addedNames = this.character.advantages ? this.character.advantages.map(a => a.name) : []
+      const skillNames = skills.map(s => s.name)
+      return advantages.filter(adv => 
+        adv.cost === 2 && 
+        !addedNames.includes(adv.name) && 
+        !skillNames.includes(adv.name)
+      )
     },
     calculatedPMs() {
-      const resistencia = this.character.attributes.resistencia || 0
-      if (resistencia === 0) return 1
-      return resistencia * 5
+      const resistenciaBase = this.character.attributes.resistencia || 0
+      const resistenciaBonus = this.getAttributeBonus('resistencia') || 0
+      const resistenciaTotal = resistenciaBase + resistenciaBonus
+      if (resistenciaTotal === 0) return 1
+      return resistenciaTotal * 5
     },
     remainingPoints() {
       const usedPoints = Object.values(this.character.attributes).reduce(
@@ -882,10 +701,22 @@ export default {
     advantagesCost() {
       if (!this.character.advantages) return 0
       return this.character.advantages.reduce((sum, adv) => {
+        // Se for vantagem gratuita ou bônus do Alien (já com custo ajustado), usar o custo definido
+        if (adv.freeFromRace) {
+          return sum
+        }
+        if (adv.alienBonus) {
+          return sum + (adv.cost || 0)
+        }
+        
         let singleCost = 0
         
+        // Se for bônus do Alien, usar o custo já definido
+        if (adv.alienBonus) {
+          singleCost = adv.cost || 0
+        }
         // Se houver modificadores selecionados, usa apenas a soma dos modificadores
-        if (adv.selectedModifiers && adv.selectedModifiers.length > 0) {
+        else if (adv.selectedModifiers && adv.selectedModifiers.length > 0) {
           const originalAdvantage = advantages.find(a => a.name === adv.name)
           if (originalAdvantage && originalAdvantage.modifiers) {
             const modifierCost = adv.selectedModifiers.reduce((modSum, modId) => {
@@ -895,9 +726,9 @@ export default {
             singleCost = Math.max(1, modifierCost) // Mínimo de 1 ponto
           }
         } else {
-          // Se não houver modificadores, usa o custo base
-          const baseCost = adv.cost || 0
-          singleCost = Math.max(1, baseCost) // Mínimo de 1 ponto
+          // Se não houver modificadores, verificar desconto da raça ou usar custo base
+          singleCost = this.getAdvantageCostWithRaceDiscount(adv)
+          singleCost = Math.max(1, singleCost) // Mínimo de 1 ponto (exceto se for 0 por ser gratuita)
         }
         
         // Multiplicar pela quantidade se houver
@@ -926,45 +757,157 @@ export default {
       }, 0)
     },
     canAffordSpecializations() {
-      return this.remainingPoints >= 1
-    },
-    filteredAdvantages() {
-      if (!this.advantageSearch) return advantages
-      const search = this.advantageSearch.toLowerCase()
-      return advantages.filter(adv => 
-        adv.name.toLowerCase().includes(search)
-      )
-    },
-    filteredDisadvantages() {
-      if (!this.disadvantageSearch) return disadvantages
-      const search = this.disadvantageSearch.toLowerCase()
-      return disadvantages.filter(dis => 
-        dis.name.toLowerCase().includes(search)
-      )
-    },
-    filteredSkills() {
-      if (!this.skillSearch) return skills
-      const search = this.skillSearch.toLowerCase()
-      return skills.filter(skill => 
-        skill.name.toLowerCase().includes(search)
-      )
-    },
-    filteredUniqueAdvantages() {
-      if (!this.uniqueAdvantageSearch) return uniqueAdvantages
-      const search = this.uniqueAdvantageSearch.toLowerCase()
-      return uniqueAdvantages.filter(ua => 
-        ua.name.toLowerCase().includes(search) ||
-        ua.group.toLowerCase().includes(search)
-      )
+      return true
     },
     allSkills() {
       return skills.filter(skill => skill.specializations && skill.specializations.length > 0)
+    },
+    raceAttributeBonuses() {
+      if (!this.character.uniqueAdvantage || !this.character.uniqueAdvantage.attributeBonuses) {
+        return {}
+      }
+      
+      const bonuses = {}
+      const raceBonuses = this.character.uniqueAdvantage.attributeBonuses
+      
+      // Processar bônus normais
+      Object.keys(raceBonuses).forEach(attr => {
+        const bonus = raceBonuses[attr]
+        
+        // Se for objeto com condition (bônus condicional)
+        if (typeof bonus === 'object' && bonus !== null && bonus.condition) {
+          bonuses[attr] = bonus
+        }
+        // Se for caracteristica (escolha do jogador)
+        else if (attr === 'caracteristica') {
+          // Verificar se o jogador já escolheu
+          if (this.character.raceAttributeChoice) {
+            const bonusValue = typeof bonus === 'number' ? bonus : (typeof bonus === 'object' && bonus !== null && typeof bonus.value === 'number' ? bonus.value : null)
+            if (bonusValue !== null) {
+              bonuses[this.character.raceAttributeChoice] = bonusValue
+            }
+          }
+        }
+        // Bônus normal
+        else {
+          const bonusValue = typeof bonus === 'number' ? bonus : (typeof bonus === 'object' && bonus !== null && typeof bonus.value === 'number' ? bonus.value : null)
+          if (bonusValue !== null) {
+            bonuses[attr] = bonusValue
+          }
+        }
+      })
+      
+      return bonuses
+    }
+  },
+  watch: {
+    showAdvantagesModal(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          if (this.$refs.advantageSearchInput) {
+            this.$refs.advantageSearchInput.focus()
+          }
+        })
+      }
+    },
+    showDisadvantagesModal(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          if (this.$refs.disadvantageSearchInput) {
+            this.$refs.disadvantageSearchInput.focus()
+          }
+        })
+      }
+    },
+    showUniqueAdvantageModal(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          if (this.$refs.uniqueAdvantageSearchInput) {
+            this.$refs.uniqueAdvantageSearchInput.focus()
+          }
+        })
+      }
+    },
+    showSkillsModal(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          if (this.$refs.skillSearchInput) {
+            this.$refs.skillSearchInput.focus()
+          }
+        })
+      }
+    },
+    showSpellsModal(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          if (this.$refs.spellSearchInput) {
+            this.$refs.spellSearchInput.focus()
+          }
+        })
+      }
+    },
+    skillsMode(newVal) {
+      if (newVal === 'specializations' && this.showSkillsModal) {
+        this.$nextTick(() => {
+          if (this.$refs.specializationSearchInput) {
+            this.$refs.specializationSearchInput.focus()
+          }
+        })
+      }
     }
   },
   mounted() {
     this.loadFromCookie()
   },
   methods: {
+    getAttributeBonus(attr) {
+      const bonuses = this.raceAttributeBonuses
+      if (!bonuses || typeof bonuses !== 'object') return null
+      
+      const bonus = bonuses[attr]
+      if (bonus === undefined || bonus === null) return null
+      
+      // Se for objeto com condition, retornar o valor
+      if (typeof bonus === 'object' && bonus !== null && 'condition' in bonus) {
+        return typeof bonus.value === 'number' ? bonus.value : null
+      }
+      
+      // Bônus normal - garantir que é um número
+      return typeof bonus === 'number' ? bonus : null
+    },
+    getAttributeBonusLabel(attr) {
+      try {
+        const bonuses = this.raceAttributeBonuses
+        if (!bonuses || typeof bonuses !== 'object') return null
+        
+        const bonus = bonuses[attr]
+        if (bonus === undefined || bonus === null) return null
+        
+        const raceName = this.character.uniqueAdvantage?.name || ''
+        if (!raceName) return null
+        
+        // Se for objeto com condition
+        if (typeof bonus === 'object' && bonus !== null && 'condition' in bonus) {
+          const bonusValue = typeof bonus.value === 'number' ? bonus.value : 0
+          const condition = String(bonus.condition || '')
+          return `+${bonusValue} ${raceName} (${condition})`
+        }
+        
+        // Bônus normal - garantir que é um número
+        const bonusValue = typeof bonus === 'number' ? bonus : null
+        if (bonusValue === null || isNaN(bonusValue)) return null
+        
+        return `+${bonusValue} ${raceName}`
+      } catch (error) {
+        console.error('Error in getAttributeBonusLabel:', error)
+        return null
+      }
+    },
+    getAttributeTotal(attr) {
+      const baseValue = this.character.attributes[attr] || 0
+      const bonus = this.getAttributeBonus(attr) || 0
+      return baseValue + bonus
+    },
     formatAttributeName(attr) {
       const names = {
         forca: 'Força (F)',
@@ -975,8 +918,35 @@ export default {
       }
       return names[attr] || attr
     },
+    getAdvantageCostWithRaceDiscount(advantage) {
+      if (!advantage) return 0
+      
+      // Se a vantagem é gratuita (freeFromRace), retorna 0
+      if (advantage.freeFromRace) {
+        return 0
+      }
+      
+      // Se é vantagem bônus do Alien, usar o custo definido
+      if (advantage.alienBonus) {
+        return advantage.cost || 0
+      }
+      
+      // Verificar se há desconto pela raça
+      if (this.character.uniqueAdvantage && this.character.uniqueAdvantage.discountedAdvantages) {
+        // Verificar desconto específico por nome
+        const discount = this.character.uniqueAdvantage.discountedAdvantages.find(
+          d => d.name === advantage.name
+        )
+        if (discount) {
+          return discount.cost
+        }
+      }
+      
+      // Retornar custo normal
+      return advantage.cost || 0
+    },
     canAffordAdvantage(advantage) {
-      return this.remainingPoints >= advantage.cost
+      return true
     },
     isAdvantageSelected(advantageName) {
       if (!this.character.advantages) return false
@@ -998,13 +968,10 @@ export default {
         if (advantage.modifiers && advantage.modifiers.length > 0) {
           // Abrir modal de modificadores (com quantidade se aplicável)
           this.advantageForModifiers = advantage
-          this.selectedModifiers = []
-          this.advantageQuantity = 1
           this.showModifiersModal = true
         } else {
           // Abrir modal de quantidade
           this.advantageForQuantity = advantage
-          this.advantageQuantity = 1
           this.showQuantityModal = true
         }
         return
@@ -1022,14 +989,18 @@ export default {
         if (advantage.modifiers && advantage.modifiers.length > 0) {
           // Abrir modal de modificadores
           this.advantageForModifiers = advantage
-          this.selectedModifiers = []
           this.showModifiersModal = true
         } else {
           // Adicionar vantagem diretamente se não tiver modificadores
-          if (this.canAffordAdvantage(advantage)) {
-            this.character.advantages.push({ ...advantage })
-            this.saveToCookie()
+          const advantageToAdd = { ...advantage }
+          // Aplicar desconto da raça se houver
+          const discountedCost = this.getAdvantageCostWithRaceDiscount(advantage)
+          if (discountedCost !== advantage.cost) {
+            advantageToAdd.cost = discountedCost
+            advantageToAdd.discountedFromRace = this.character.uniqueAdvantage?.name
           }
+          this.character.advantages.push(advantageToAdd)
+          this.saveToCookie()
         }
       }
     },
@@ -1056,95 +1027,77 @@ export default {
       const baseCost = advantage.cost || 0
       return Math.max(1, baseCost) // Mínimo de 1 ponto
     },
-    toggleModifier(modifierId) {
-      const index = this.selectedModifiers.indexOf(modifierId)
-      if (index >= 0) {
-        this.selectedModifiers.splice(index, 1)
-      } else {
-        this.selectedModifiers.push(modifierId)
-      }
-    },
-    isModifierSelected(modifierId) {
-      return this.selectedModifiers.includes(modifierId)
-    },
-    canAffordAdvantageWithModifiers() {
-      if (!this.advantageForModifiers) return false
-      const singleCost = this.calculateAdvantageCostWithModifiers(
-        this.advantageForModifiers,
-        this.selectedModifiers
-      )
-      const quantity = this.advantageForModifiers.purchasableMultiple ? this.advantageQuantity : 1
-      const totalCost = singleCost * quantity
-      return this.remainingPoints >= totalCost
-    },
-    confirmAdvantageWithModifiers() {
+    handleConfirmAdvantageWithModifiers({ selectedModifiers, quantity }) {
       if (!this.advantageForModifiers) return
       
       const advantageToAdd = {
         ...this.advantageForModifiers,
-        selectedModifiers: [...this.selectedModifiers]
+        selectedModifiers: [...selectedModifiers]
+      }
+      
+      // Se não houver modificadores, aplicar desconto da raça
+      if (selectedModifiers.length === 0) {
+        const discountedCost = this.getAdvantageCostWithRaceDiscount(this.advantageForModifiers)
+        if (discountedCost !== this.advantageForModifiers.cost) {
+          advantageToAdd.cost = discountedCost
+          advantageToAdd.discountedFromRace = this.character.uniqueAdvantage?.name
+        }
       }
       
       // Se a vantagem pode ser comprada múltiplas vezes, adicionar quantidade
       if (this.advantageForModifiers.purchasableMultiple) {
-        advantageToAdd.quantity = this.advantageQuantity
+        advantageToAdd.quantity = quantity
       }
       
       // Remover propriedades que não precisam ser salvas
       delete advantageToAdd.modifiers
       delete advantageToAdd.purchasableMultiple
       
-      if (this.canAffordAdvantageWithModifiers()) {
-        this.character.advantages.push(advantageToAdd)
-        this.saveToCookie()
-        this.closeModifiersModal()
-      }
+      this.character.advantages.push(advantageToAdd)
+      this.saveToCookie()
+      this.closeModifiersModal()
     },
     closeModifiersModal() {
       this.showModifiersModal = false
       this.advantageForModifiers = null
-      this.selectedModifiers = []
     },
     // Métodos para gerenciar quantidade
     canAffordAdvantageWithQuantity() {
-      if (!this.advantageForQuantity) return false
-      const singleCost = this.advantageForQuantity.cost || 0
-      const totalCost = singleCost * this.advantageQuantity
-      return this.remainingPoints >= totalCost
+      return true
     },
-    confirmAdvantageWithQuantity() {
+    handleConfirmAdvantageWithQuantity(quantity) {
       if (!this.advantageForQuantity) return
       
       const advantageToAdd = {
         ...this.advantageForQuantity,
-        quantity: this.advantageQuantity
+        quantity: quantity
+      }
+      
+      // Aplicar desconto da raça se houver
+      const discountedCost = this.getAdvantageCostWithRaceDiscount(this.advantageForQuantity)
+      if (discountedCost !== this.advantageForQuantity.cost) {
+        advantageToAdd.cost = discountedCost
+        advantageToAdd.discountedFromRace = this.character.uniqueAdvantage?.name
       }
       
       // Remover a propriedade purchasableMultiple do objeto salvo
       delete advantageToAdd.purchasableMultiple
       
-      if (this.canAffordAdvantageWithQuantity()) {
-        this.character.advantages.push(advantageToAdd)
-        this.saveToCookie()
-        this.closeQuantityModal()
-      }
+      this.character.advantages.push(advantageToAdd)
+      this.saveToCookie()
+      this.closeQuantityModal()
     },
     closeQuantityModal() {
       this.showQuantityModal = false
       this.advantageForQuantity = null
       this.advantageQuantity = 1
     },
-    increaseQuantity() {
-      if (this.advantageForQuantity) {
-        this.advantageQuantity++
-      }
-    },
-    decreaseQuantity() {
-      if (this.advantageQuantity > 1) {
-        this.advantageQuantity--
-      }
-    },
     getAdvantageTotalCost(advantage) {
+      // Se for vantagem gratuita, retorna 0
+      if (advantage.freeFromRace) {
+        return 0
+      }
+      
       let singleCost = 0
       
       // Se houver modificadores selecionados, usa apenas a soma dos modificadores
@@ -1158,9 +1111,9 @@ export default {
           singleCost = Math.max(1, modifierCost) // Mínimo de 1 ponto
         }
       } else {
-        // Se não houver modificadores, usa o custo base
-        const baseCost = advantage.cost || 0
-        singleCost = Math.max(1, baseCost) // Mínimo de 1 ponto
+        // Se não houver modificadores, verificar desconto da raça ou usar custo base
+        singleCost = this.getAdvantageCostWithRaceDiscount(advantage)
+        singleCost = Math.max(1, singleCost) // Mínimo de 1 ponto (exceto se for 0 por ser gratuita)
       }
       
       // Multiplicar pela quantidade se houver
@@ -1176,7 +1129,7 @@ export default {
       return modifierId
     },
     increaseAttribute(attr) {
-      if (this.remainingPoints > 0 && this.character.attributes[attr] < 5) {
+      if (this.character.attributes[attr] < 5) {
         this.character.attributes[attr]++
         this.saveToCookie()
       }
@@ -1188,84 +1141,85 @@ export default {
       }
     },
     updateAttribute(attr) {
-      if (this.character.attributes[attr] < 0) {
-        this.character.attributes[attr] = 0
-      }
       if (this.character.attributes[attr] > 5) {
         this.character.attributes[attr] = 5
       }
       this.saveToCookie()
     },
     updateTotalPoints() {
-      if (this.totalPoints < 0) {
-        this.totalPoints = 0
-      }
       this.saveToCookie()
     },
     saveToCookie() {
       const dataToSave = {
-        totalPoints: this.totalPoints,
-        character: this.character
+        characters: this.characters,
+        activeTabIndex: this.activeTabIndex
       }
       setCookieObject(COOKIE_NAME, dataToSave)
     },
     loadFromCookie() {
       const savedData = getCookieObject(COOKIE_NAME)
       if (savedData) {
-        if (savedData.totalPoints !== undefined) {
-          this.totalPoints = savedData.totalPoints
-        }
-        if (savedData.character) {
-          this.character = { ...this.character, ...savedData.character }
-          // Remover level se existir (campo removido do sistema)
-          if (this.character.level !== undefined) {
-            delete this.character.level
+        // Compatibilidade com formato antigo (sem tabs)
+        if (savedData.character && !savedData.characters) {
+          // Migrar formato antigo para novo
+          const oldCharacter = savedData.character
+          const normalized = this.normalizeCharacterData(oldCharacter)
+          
+          this.characters = [{
+            totalPoints: savedData.totalPoints || 0,
+            character: normalized
+          }]
+          this.activeTabIndex = 0
+        } else if (savedData.characters && Array.isArray(savedData.characters)) {
+          // Formato novo com múltiplas fichas
+          this.characters = savedData.characters.map(charData => ({
+            totalPoints: charData.totalPoints || 0,
+            character: this.normalizeCharacterData(charData.character)
+          }))
+          this.activeTabIndex = savedData.activeTabIndex || 0
+          if (this.activeTabIndex >= this.characters.length) {
+            this.activeTabIndex = 0
           }
-          // Garantir que todos os atributos existam
-          if (!this.character.attributes) {
-            this.character.attributes = {
-              forca: 0,
-              habilidade: 0,
-              resistencia: 0,
-              armadura: 0,
-              poderDeFogo: 0
-            }
-          }
-          // Garantir que advantages exista
-          if (!this.character.advantages) {
-            this.character.advantages = []
-          }
-          // Garantir que disadvantages exista
-          if (!this.character.disadvantages) {
-            this.character.disadvantages = []
-          }
-          // Garantir que skills exista e migrar dados antigos
-          if (!this.character.skills) {
-            this.character.skills = []
-          } else {
-            // Migrar perícias antigas (sem type) para perícias completas
-            this.character.skills = this.character.skills.map(skill => {
-              if (!skill.type) {
-                return {
-                  type: 'full',
-                  name: skill.name,
-                  cost: 2
-                }
-              }
-              return skill
-            })
-          }
-          // Garantir que experiencePoints exista
-          if (this.character.experiencePoints === undefined) {
-            this.character.experiencePoints = 0
-          }
+        } else {
+          // Dados inválidos, usar padrão
+          this.characters = [{
+            totalPoints: 0,
+            character: this.normalizeCharacterData({})
+          }]
+          this.activeTabIndex = 0
         }
       }
     },
-    resetSheet() {
-      if (confirm('Tem certeza que deseja resetar a ficha? Todos os dados serão perdidos.')) {
-        this.totalPoints = 0
-        this.character = {
+    async showConfirm(title, message, confirmText = 'Confirmar') {
+      return new Promise((resolve) => {
+        this.confirmModalTitle = title
+        this.confirmModalMessage = message
+        this.confirmModalConfirmText = confirmText
+        this.confirmModalResolve = resolve
+        this.showConfirmModal = true
+      })
+    },
+    handleConfirm() {
+      this.showConfirmModal = false
+      if (this.confirmModalResolve) {
+        this.confirmModalResolve(true)
+        this.confirmModalResolve = null
+      }
+    },
+    handleCancel() {
+      this.showConfirmModal = false
+      if (this.confirmModalResolve) {
+        this.confirmModalResolve(false)
+        this.confirmModalResolve = null
+      }
+    },
+    async resetSheet() {
+      const confirmed = await this.showConfirm(
+        'Resetar Ficha',
+        'Tem certeza que deseja resetar a ficha? Todos os dados serão perdidos.'
+      )
+      if (confirmed) {
+        const defaultCharacter = {
           name: '',
           attributes: {
             forca: 0,
@@ -1278,9 +1232,14 @@ export default {
           disadvantages: [],
           uniqueAdvantage: null,
           skills: [],
+          spells: [],
           experiencePoints: 0,
           background: '',
           notes: ''
+        }
+        this.characters[this.activeTabIndex] = {
+          totalPoints: 0,
+          character: { ...defaultCharacter }
         }
         this.saveToCookie()
       }
@@ -1313,15 +1272,218 @@ export default {
     },
     // Vantagens Únicas
     canAffordUniqueAdvantage(uniqueAdv) {
-      return this.remainingPoints >= uniqueAdv.cost
+      return true
     },
     selectUniqueAdvantage(uniqueAdv) {
-      if (this.canAffordUniqueAdvantage(uniqueAdv)) {
-        this.character.uniqueAdvantage = { ...uniqueAdv }
-        this.saveToCookie()
+      // Remover vantagens gratuitas e bônus da raça anterior se houver
+        if (this.character.uniqueAdvantage && this.character.uniqueAdvantage.name) {
+          const previousRaceName = this.character.uniqueAdvantage.name
+          if (this.character.advantages) {
+            this.character.advantages = this.character.advantages.filter(adv => {
+              // Remover vantagens gratuitas da raça
+              if (adv.freeFromRace && adv.freeFromRace === previousRaceName) {
+                return false
+              }
+              // Remover vantagem bônus do Alien
+              if (previousRaceName === 'Alien' && adv.alienBonus) {
+                return false
+              }
+              return true
+            })
+          }
+          // Remover escolha de atributo se a raça anterior tinha Característica +1
+          if (this.character.uniqueAdvantage.attributeBonuses && 
+              this.character.uniqueAdvantage.attributeBonuses.caracteristica) {
+            if (this.character.raceAttributeChoice) {
+              delete this.character.raceAttributeChoice
+            }
+          }
+        }
+        
+        // Se a raça tem vantagem bônus especial (Alien), abrir modal especial
+        if (uniqueAdv.bonusAdvantage) {
+          this.showAlienBonusModal = true
+        }
+        // Se a raça tem escolha de atributo (Característica +1), abrir modal de escolha
+        else if (uniqueAdv.attributeBonuses && uniqueAdv.attributeBonuses.caracteristica) {
+          // Verificar se já tem escolha salva
+          if (this.character.raceAttributeChoice) {
+            // Já tem escolha, adicionar raça diretamente
+            this.character.uniqueAdvantage = { ...uniqueAdv }
+            this.saveToCookie()
+          } else {
+            // Abrir modal para escolher atributo
+            this.raceForAttributeChoice = { ...uniqueAdv }
+            this.showAttributeChoiceModal = true
+          }
+        }
+        // Se a raça tem vantagens gratuitas, abrir modal para escolher
+        else if (uniqueAdv.freeAdvantages && uniqueAdv.freeAdvantages.length > 0) {
+          this.raceForFreeAdvantages = { ...uniqueAdv }
+          this.selectedFreeAdvantages = {}
+          this.showFreeAdvantagesModal = true
+        } else {
+          // Se não tem vantagens gratuitas, adicionar diretamente
+          this.character.uniqueAdvantage = { ...uniqueAdv }
+          this.saveToCookie()
+        }
+    },
+    handleConfirmFreeAdvantages(selectedFreeAdvantages) {
+      if (!this.raceForFreeAdvantages) return
+      
+      // Remover vantagens gratuitas da raça anterior se houver
+      if (this.character.uniqueAdvantage && this.character.uniqueAdvantage.name) {
+        const previousRaceName = this.character.uniqueAdvantage.name
+        if (this.character.advantages) {
+          this.character.advantages = this.character.advantages.filter(adv => 
+            !adv.freeFromRace || adv.freeFromRace !== previousRaceName
+          )
+        }
+      }
+      
+      // Adicionar a raça
+      this.character.uniqueAdvantage = { ...this.raceForFreeAdvantages }
+      
+      // Adicionar vantagens gratuitas escolhidas
+      if (!this.character.advantages) {
+        this.character.advantages = []
+      }
+      
+      // Processar cada vantagem gratuita
+      this.raceForFreeAdvantages.freeAdvantages.forEach((freeAdv, index) => {
+        if (freeAdv.type === 'choice') {
+          // Adicionar a vantagem escolhida
+          const selectedAdv = selectedFreeAdvantages[index]
+          if (selectedAdv) {
+            const advantage = advantages.find(a => a.name === selectedAdv)
+            if (advantage) {
+              this.character.advantages.push({
+                ...advantage,
+                cost: 0,
+                freeFromRace: this.raceForFreeAdvantages.name
+              })
+            }
+          }
+        } else {
+          // Adicionar vantagem única diretamente
+          const advantage = advantages.find(a => a.name === freeAdv)
+          if (advantage) {
+            this.character.advantages.push({
+              ...advantage,
+              cost: 0,
+              freeFromRace: this.raceForFreeAdvantages.name
+            })
+          }
+        }
+      })
+      
+      this.saveToCookie()
+      this.closeFreeAdvantagesModal()
+    },
+    closeFreeAdvantagesModal() {
+      this.showFreeAdvantagesModal = false
+      this.raceForFreeAdvantages = null
+    },
+    handleConfirmAlienBonus({ type, advantage }) {
+      if (!type || !advantage) return
+      
+      // Remover vantagem bônus anterior do Alien se houver
+      if (this.character.advantages) {
+        this.character.advantages = this.character.advantages.filter(adv => 
+          !adv.alienBonus
+        )
+      }
+      
+      // Adicionar a raça Alien
+      const alienRace = uniqueAdvantages.find(r => r.name === 'Alien')
+      if (alienRace) {
+        this.character.uniqueAdvantage = { ...alienRace }
+      }
+      
+      // Adicionar vantagens se não existir
+      if (!this.character.advantages) {
+        this.character.advantages = []
+      }
+      
+      // Encontrar a vantagem escolhida
+      const advantageObj = advantages.find(a => a.name === advantage)
+      if (advantageObj) {
+        if (type === 'free1point') {
+          // Vantagem de 1 ponto grátis
+          this.character.advantages.push({
+            ...advantageObj,
+            cost: 0,
+            alienBonus: true
+          })
+        } else if (type === 'discount2point') {
+          // Vantagem de 2 pontos por 1 ponto
+          this.character.advantages.push({
+            ...advantageObj,
+            cost: 1,
+            alienBonus: true,
+            originalCost: 2
+          })
+        }
+      }
+      
+      this.saveToCookie()
+      this.closeAlienBonusModal()
+      
+      // Se o Alien também tem escolha de atributo (Característica +1), abrir modal de escolha
+      if (alienRace && alienRace.attributeBonuses && alienRace.attributeBonuses.caracteristica) {
+        // Verificar se já tem escolha salva
+        if (this.character.raceAttributeChoice) {
+          // Já tem escolha, não precisa abrir modal novamente
+        } else {
+          // Abrir modal para escolher atributo
+          this.raceForAttributeChoice = { ...alienRace }
+          this.showAttributeChoiceModal = true
+        }
       }
     },
+    closeAlienBonusModal() {
+      this.showAlienBonusModal = false
+    },
+    handleConfirmAttributeChoice(attribute) {
+      if (!attribute || !this.raceForAttributeChoice) return
+      
+      // Salvar escolha do atributo
+      this.character.raceAttributeChoice = attribute
+      
+      // Adicionar a raça
+      this.character.uniqueAdvantage = { ...this.raceForAttributeChoice }
+      
+      this.saveToCookie()
+      this.closeAttributeChoiceModal()
+    },
+    closeAttributeChoiceModal() {
+      this.showAttributeChoiceModal = false
+      this.raceForAttributeChoice = null
+    },
     removeUniqueAdvantage() {
+      // Remover vantagens gratuitas e bônus da raça quando a raça for removida
+      if (this.character.uniqueAdvantage && this.character.uniqueAdvantage.name) {
+        const raceName = this.character.uniqueAdvantage.name
+        if (this.character.advantages) {
+          this.character.advantages = this.character.advantages.filter(adv => {
+            // Remover vantagens gratuitas da raça
+            if (adv.freeFromRace && adv.freeFromRace === raceName) {
+              return false
+            }
+            // Remover vantagem bônus do Alien
+            if (raceName === 'Alien' && adv.alienBonus) {
+              return false
+            }
+            return true
+          })
+        }
+      }
+      
+      // Remover escolha de atributo se houver
+      if (this.character.raceAttributeChoice) {
+        delete this.character.raceAttributeChoice
+      }
+      
       this.character.uniqueAdvantage = null
       this.saveToCookie()
     },
@@ -1333,9 +1495,6 @@ export default {
       )
     },
     canAffordSkill(skill, type) {
-      if (type === 'full') {
-        return this.remainingPoints >= 2
-      }
       return true
     },
     toggleFullSkill(skill) {
@@ -1351,14 +1510,12 @@ export default {
         // Remover perícia completa
         this.character.skills.splice(index, 1)
       } else {
-        // Adicionar perícia completa se tiver pontos suficientes
-        if (this.canAffordSkill(skill, 'full')) {
-          this.character.skills.push({
-            type: 'full',
-            name: skill.name,
-            cost: 2
-          })
-        }
+        // Adicionar perícia completa
+        this.character.skills.push({
+          type: 'full',
+          name: skill.name,
+          cost: 2
+        })
       }
       
       this.saveToCookie()
@@ -1410,24 +1567,20 @@ export default {
         }
       }
     },
-    confirmSpecializations() {
-      if (this.selectedSpecializations.length === 3 && this.canAffordSpecializations) {
+    handleConfirmSpecializations(specializations) {
+      if (specializations.length === 3) {
         if (!this.character.skills) {
           this.character.skills = []
         }
         
         this.character.skills.push({
           type: 'specializations',
-          specializations: this.selectedSpecializations.map(s => s.name),
+          specializations: specializations.map(s => s.name),
           cost: 1
         })
         
-        this.selectedSpecializations = []
         this.saveToCookie()
       }
-    },
-    clearSpecializations() {
-      this.selectedSpecializations = []
     },
     closeSkillsModal() {
       this.showSkillsModal = false
@@ -1441,6 +1594,40 @@ export default {
         this.character.skills.splice(index, 1)
         this.saveToCookie()
       }
+    },
+    // Métodos para magias
+    isSpellSelected(spellName) {
+      if (!this.character.spells) return false
+      return this.character.spells.some(spell => spell.name === spellName)
+    },
+    toggleSpell(spell) {
+      if (!this.character.spells) {
+        this.character.spells = []
+      }
+      
+      const index = this.character.spells.findIndex(s => s.name === spell.name)
+      
+      if (index >= 0) {
+        // Remover magia
+        this.character.spells.splice(index, 1)
+        this.saveToCookie()
+      } else {
+        // Adicionar magia
+        this.character.spells.push({ ...spell })
+        this.saveToCookie()
+      }
+    },
+    removeSpell(index) {
+      if (this.character.spells) {
+        this.character.spells.splice(index, 1)
+        this.saveToCookie()
+      }
+    },
+    showSpellDescription(spell) {
+      this.selectedSpellForDescription = spell
+    },
+    closeSpellDescription() {
+      this.selectedSpellForDescription = null
     },
     // Popover de descrição de vantagem
     showAdvantageDescription(advantage) {
@@ -1471,1297 +1658,303 @@ export default {
         .split(/(?<=[.!?])\s+(?=[A-Z])|(?<=\n\n)/)
         .filter(p => p.trim().length > 0)
         .map(p => p.trim())
+    },
+    // Métodos de gerenciamento de tabs
+    addNewTab() {
+      const defaultCharacter = {
+        name: '',
+        attributes: {
+          forca: 0,
+          habilidade: 0,
+          resistencia: 0,
+          armadura: 0,
+          poderDeFogo: 0
+        },
+        advantages: [],
+        disadvantages: [],
+        uniqueAdvantage: null,
+        skills: [],
+        spells: [],
+        experiencePoints: 0,
+        background: '',
+        notes: ''
+      }
+      this.characters.push({
+        totalPoints: 0,
+        character: { ...defaultCharacter }
+      })
+      this.activeTabIndex = this.characters.length - 1
+      this.saveToCookie()
+    },
+    switchTab(index) {
+      if (index >= 0 && index < this.characters.length) {
+        this.activeTabIndex = index
+        this.saveToCookie()
+      }
+    },
+    async closeTab(index) {
+      if (this.characters.length <= 1) {
+        return // Não permite fechar a última aba
+      }
+
+      const hasData = this.characters[index].character.name || 
+                     this.characters[index].totalPoints > 0 ||
+                     Object.values(this.characters[index].character.attributes).some(v => v > 0) ||
+                     (this.characters[index].character.advantages && this.characters[index].character.advantages.length > 0) ||
+                     (this.characters[index].character.disadvantages && this.characters[index].character.disadvantages.length > 0) ||
+                     this.characters[index].character.uniqueAdvantage ||
+                     (this.characters[index].character.skills && this.characters[index].character.skills.length > 0) ||
+                     (this.characters[index].character.spells && this.characters[index].character.spells.length > 0)
+
+      if (hasData) {
+        const confirmed = await this.showConfirm(
+          'Fechar Ficha',
+          'Esta ficha contém dados. Tem certeza que deseja fechá-la?'
+        )
+        if (!confirmed) {
+          return
+        }
+      }
+
+      this.characters.splice(index, 1)
+      if (this.activeTabIndex >= this.characters.length) {
+        this.activeTabIndex = this.characters.length - 1
+      }
+      if (this.activeTabIndex < 0) {
+        this.activeTabIndex = 0
+      }
+      this.saveToCookie()
+    },
+    getTabName(char) {
+      if (char.character && char.character.name && char.character.name.trim()) {
+        return char.character.name
+      }
+      const index = this.characters.indexOf(char)
+      return `Ficha ${index + 1}`
+    },
+    // Métodos de exportação/importação
+    exportCharacterSheet() {
+      const characterName = this.character.name || 'personagem'
+      const sanitizedName = characterName.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+      const fileName = `${sanitizedName}_ficha.json`
+
+      const dataToExport = {
+        totalPoints: this.totalPoints,
+        character: this.character
+      }
+
+      const jsonString = JSON.stringify(dataToExport, null, 2)
+      const blob = new Blob([jsonString], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      // Feedback visual
+      this.showExportSuccess()
+    },
+    triggerImport() {
+      this.$refs.fileInput.click()
+    },
+    async importCharacterSheet(event) {
+      const file = event.target.files[0]
+      if (!file) return
+
+      try {
+        const text = await file.text()
+        const data = JSON.parse(text)
+
+        // Resetar input
+        event.target.value = ''
+
+        // Validar estrutura
+        let charactersToImport = []
+        let isArray = Array.isArray(data)
+
+        if (isArray) {
+          // Array de fichas
+          charactersToImport = data.filter(item => {
+            return this.validateCharacterData(item)
+          })
+
+          if (charactersToImport.length === 0) {
+            this.$toast.error('Nenhuma ficha válida encontrada no arquivo.')
+            return
+          }
+
+          if (charactersToImport.length > 1) {
+            // Múltiplas fichas
+            const choice = await this.showConfirm(
+              'Importar Múltiplas Fichas',
+              `O arquivo contém ${charactersToImport.length} fichas.\n\n` +
+              'Confirmar = Adicionar como novas abas\n' +
+              'Cancelar = Substituir todas as fichas atuais',
+              'Adicionar como novas abas'
+            )
+
+            if (choice) {
+              // Adicionar como novas abas
+              charactersToImport.forEach(charData => {
+                this.characters.push({
+                  totalPoints: charData.totalPoints || 0,
+                  character: this.normalizeCharacterData(charData.character)
+                })
+              })
+              this.activeTabIndex = this.characters.length - 1
+            } else {
+              // Substituir todas
+              this.characters = charactersToImport.map(charData => ({
+                totalPoints: charData.totalPoints || 0,
+                character: this.normalizeCharacterData(charData.character)
+              }))
+              this.activeTabIndex = 0
+            }
+          } else {
+            // Uma ficha no array
+            const choice = await this.showConfirm(
+              'Importar Ficha',
+              'O arquivo contém 1 ficha.\n\n' +
+              'Confirmar = Criar nova aba\n' +
+              'Cancelar = Substituir ficha atual',
+              'Criar nova aba'
+            )
+
+            if (choice) {
+              this.characters.push({
+                totalPoints: charactersToImport[0].totalPoints || 0,
+                character: this.normalizeCharacterData(charactersToImport[0].character)
+              })
+              this.activeTabIndex = this.characters.length - 1
+            } else {
+              this.characters[this.activeTabIndex] = {
+                totalPoints: charactersToImport[0].totalPoints || 0,
+                character: this.normalizeCharacterData(charactersToImport[0].character)
+              }
+            }
+          }
+        } else {
+          // Objeto único
+          if (!this.validateCharacterData(data)) {
+            this.$toast.error('Formato de arquivo inválido. O arquivo deve conter dados de personagem.')
+            return
+          }
+
+          const choice = await this.showConfirm(
+            'Importar Ficha',
+            'O arquivo contém 1 ficha.\n\n' +
+            'Confirmar = Criar nova aba\n' +
+            'Cancelar = Substituir ficha atual',
+            'Criar nova aba'
+          )
+
+          // Verificar se data.character existe ou se data é o próprio character
+          const characterData = data.character || data
+          
+          if (choice) {
+            this.characters.push({
+              totalPoints: data.totalPoints || 0,
+              character: this.normalizeCharacterData(characterData)
+            })
+            this.activeTabIndex = this.characters.length - 1
+          } else {
+            this.characters[this.activeTabIndex] = {
+              totalPoints: data.totalPoints || 0,
+              character: this.normalizeCharacterData(characterData)
+            }
+          }
+        }
+
+        this.saveToCookie()
+        
+        // Contar fichas importadas para mensagem
+        let importedCount = 1
+        if (isArray) {
+          importedCount = charactersToImport.length
+        }
+        this.showImportSuccess(importedCount)
+      } catch (error) {
+        console.error('Erro ao importar ficha:', error)
+        this.$toast.error('Erro ao importar ficha. Verifique se o arquivo é um JSON válido.')
+      }
+    },
+    validateCharacterData(data) {
+      if (!data || typeof data !== 'object') return false
+      
+      // Verificar se tem character ou se é o próprio character
+      const character = data.character || data
+      if (!character || typeof character !== 'object') return false
+
+      // Verificar estrutura básica
+      if (!character.attributes || typeof character.attributes !== 'object') return false
+
+      return true
+    },
+    normalizeCharacterData(character) {
+      // Garantir que todos os campos existam
+      const normalized = {
+        name: character.name || '',
+        attributes: {
+          forca: character.attributes?.forca || 0,
+          habilidade: character.attributes?.habilidade || 0,
+          resistencia: character.attributes?.resistencia || 0,
+          armadura: character.attributes?.armadura || 0,
+          poderDeFogo: character.attributes?.poderDeFogo || 0
+        },
+        advantages: character.advantages || [],
+        disadvantages: character.disadvantages || [],
+        uniqueAdvantage: character.uniqueAdvantage || null,
+        skills: character.skills || [],
+        spells: character.spells || [],
+        experiencePoints: character.experiencePoints || 0,
+        background: character.background || '',
+        notes: character.notes || ''
+      }
+
+      // Migrar perícias antigas se necessário
+      if (normalized.skills && normalized.skills.length > 0) {
+        normalized.skills = normalized.skills.map(skill => {
+          if (!skill.type) {
+            return {
+              type: 'full',
+              name: skill.name,
+              cost: 2
+            }
+          }
+          return skill
+        })
+      }
+
+      // Adicionar raceAttributeChoice se existir
+      if (character.raceAttributeChoice) {
+        normalized.raceAttributeChoice = character.raceAttributeChoice
+      }
+
+      return normalized
+    },
+    showExportSuccess() {
+      // Feedback simples - pode ser melhorado com toast/notificação
+      const originalText = this.$el.querySelector('.btn-export')?.textContent
+      if (this.$el.querySelector('.btn-export')) {
+        this.$el.querySelector('.btn-export').textContent = '✓ Salvo!'
+        setTimeout(() => {
+          if (this.$el.querySelector('.btn-export')) {
+            this.$el.querySelector('.btn-export').textContent = originalText
+          }
+        }, 2000)
+      }
+    },
+    showImportSuccess(count) {
+      this.$toast.success(`Ficha${count > 1 ? 's' : ''} importada${count > 1 ? 's' : ''} com sucesso!`)
     }
   }
 }
 </script>
 
 <style scoped>
-.character-sheet {
-  max-width: 1200px;
-  margin: 0 auto;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 30px;
-}
-
-.sheet-header {
-  border-bottom: 3px solid #4a5568;
-  padding-bottom: 20px;
-  margin-bottom: 30px;
-}
-
-.sheet-header h1 {
-  color: #2d3748;
-  font-size: 2rem;
-  margin-bottom: 20px;
-}
-
-.points-control {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.points-control label {
-  font-weight: 600;
-  color: #4a5568;
-}
-
-.points-input {
-  width: 120px;
-  padding: 8px 12px;
-  border: 2px solid #cbd5e0;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.points-input:focus {
-  outline: none;
-  border-color: #4299e1;
-}
-
-.points-remaining {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #4a5568;
-}
-
-.points-remaining span {
-  color: #38a169;
-  font-size: 1.2rem;
-}
-
-.points-remaining span.negative {
-  color: #e53e3e;
-}
-
-.sheet-content {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
-.sheet-section {
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 20px;
-  background: #f7fafc;
-  display: block;
-}
-
-.sheet-section h2 {
-  color: #2d3748;
-  font-size: 1.5rem;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #cbd5e0;
-}
-
-/* Grid de seções lado a lado */
-.sections-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.sections-grid .sheet-section {
-  min-height: 200px;
-  display: flex;
-  flex-direction: column;
-}
-
-.sections-grid .sheet-section h2 {
-  font-size: 1.2rem;
-  margin-bottom: 15px;
-}
-
-.sections-grid .advantages-list-main {
-  grid-template-columns: 1fr;
-  gap: 8px;
-}
-
-.sections-grid .section-header-with-button {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.sections-grid .section-header-with-button h2 {
-  width: 100%;
-}
-
-.sections-grid .btn-add-advantage {
-  width: 100%;
-  font-size: 0.85rem;
-  padding: 6px 12px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group.full-width {
-  grid-column: 1 / -1;
-}
-
-.form-group label {
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #4a5568;
-}
-
-.form-group input,
-.form-group textarea {
-  padding: 10px;
-  border: 2px solid #cbd5e0;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-family: inherit;
-  transition: border-color 0.2s;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #4299e1;
-}
-
-.form-group textarea {
-  resize: vertical;
-}
-
-.attributes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-}
-
-.attribute-item {
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 15px;
-  transition: box-shadow 0.2s;
-}
-
-.attribute-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.attribute-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.attribute-header label {
-  font-weight: 600;
-  color: #4a5568;
-  font-size: 1.1rem;
-}
-
-.attribute-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #2d3748;
-  background: #edf2f7;
-  padding: 4px 12px;
-  border-radius: 4px;
-  min-width: 50px;
-  text-align: center;
-}
-
-.attribute-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.btn-control {
-  width: 40px;
-  height: 40px;
-  border: 2px solid #cbd5e0;
-  border-radius: 4px;
-  background: white;
-  font-size: 1.5rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-control:hover:not(:disabled) {
-  background: #edf2f7;
-  border-color: #4299e1;
-  transform: scale(1.05);
-}
-
-.btn-control:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-decrease {
-  color: #e53e3e;
-}
-
-.btn-increase {
-  color: #38a169;
-}
-
-.attribute-input {
-  flex: 1;
-  padding: 8px;
-  border: 2px solid #cbd5e0;
-  border-radius: 4px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-align: center;
-}
-
-.attribute-input:focus {
-  outline: none;
-  border-color: #4299e1;
-}
-
-.sheet-actions {
-  display: flex;
-  justify-content: center;
-  padding-top: 20px;
-  border-top: 2px solid #e2e8f0;
-}
-
-.btn-reset {
-  padding: 12px 24px;
-  background: #e53e3e;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-reset:hover {
-  background: #c53030;
-}
-
-.section-header-with-button {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #cbd5e0;
-}
-
-.section-header-with-button h2 {
-  margin: 0;
-  padding: 0;
-  border: none;
-}
-
-.btn-add-advantage {
-  padding: 8px 16px;
-  background: #4299e1;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-add-advantage:hover {
-  background: #3182ce;
-}
-
-/* Lista de vantagens/desvantagens/perícias na página principal - GRID DE 2 COLUNAS */
-.advantages-list-main {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  width: 100%;
-}
-
-.advantages-list-main .advantage-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  transition: box-shadow 0.2s;
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-.advantages-list-main .advantage-item:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.advantage-info {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.advantage-name {
-  font-weight: 600;
-  color: #2d3748;
-  margin-bottom: 4px;
-}
-
-.advantage-cost {
-  color: #4a5568;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.advantage-modifiers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-  align-items: center;
-}
-
-.modifiers-label {
-  font-size: 0.85em;
-  color: #718096;
-  font-weight: 500;
-}
-
-.modifier-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  background: #e2e8f0;
-  border-radius: 12px;
-  font-size: 0.8em;
-  color: #4a5568;
-  font-weight: 500;
-}
-
-.btn-remove-advantage {
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: #e53e3e;
-  color: white;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-
-.btn-remove-advantage:hover {
-  background: #c53030;
-}
-
-.no-advantages {
-  padding: 20px;
-  text-align: center;
-  color: #718096;
-  font-style: italic;
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  max-width: 800px;
-  width: 100%;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.modal-header h2 {
-  margin: 0;
-  color: #2d3748;
-  font-size: 1.5rem;
-}
-
-.btn-close-modal {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #e2e8f0;
-  color: #4a5568;
-  border-radius: 50%;
-  font-size: 1.5rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-
-.btn-close-modal:hover {
-  background: #cbd5e0;
-}
-
-.modal-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-}
-
-.search-box {
-  margin-bottom: 20px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px;
-  border: 2px solid #cbd5e0;
-  border-radius: 6px;
-  font-size: 1rem;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #4299e1;
-}
-
-.advantages-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-}
-
-.advantage-option {
-  padding: 12px;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: white;
-}
-
-.advantage-option:hover:not(.disabled) {
-  border-color: #4299e1;
-  box-shadow: 0 2px 8px rgba(66, 153, 225, 0.2);
-}
-
-.advantage-option.selected {
-  background: #bee3f8;
-  border-color: #4299e1;
-}
-
-.advantage-option.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #f7fafc;
-}
-
-.advantage-option-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.advantage-option-name-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
-  overflow: visible;
-}
-
-.advantage-option-name {
-  font-weight: 600;
-  color: #2d3748;
-  font-size: 0.9rem;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.advantage-option-cost {
-  color: #4a5568;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.advantage-option-group {
-  font-size: 0.75rem;
-  color: #718096;
-  margin-top: 4px;
-}
-
-.advantage-option-description {
-  font-size: 0.8rem;
-  color: #4a5568;
-  margin-top: 6px;
-  font-style: italic;
-}
-
-.advantage-option {
-  position: relative;
-}
-
-.advantage-info-btn {
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  min-height: 24px;
-  border: none;
-  background: rgba(66, 153, 225, 0.1);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s, opacity 0.2s, background 0.2s;
-  padding: 0;
-  flex-shrink: 0;
-  opacity: 0.8;
-  line-height: 1;
-  z-index: 10;
-}
-
-.advantage-info-btn:hover {
-  transform: scale(1.2);
-  opacity: 1;
-}
-
-.advantage-option-summary {
-  font-size: 0.75rem;
-  color: #718096;
-  margin-top: 6px;
-  line-height: 1.4;
-  font-style: italic;
-}
-
-/* Popover Styles */
-.popover-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: 20px;
-}
-
-.popover-content {
-  background: white;
-  border-radius: 8px;
-  max-width: 600px;
-  width: 100%;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-}
-
-.popover-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.popover-header h3 {
-  margin: 0;
-  color: #2d3748;
-  font-size: 1.3rem;
-}
-
-.popover-close-btn {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #e2e8f0;
-  color: #4a5568;
-  border-radius: 50%;
-  font-size: 1.5rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s;
-}
-
-.popover-close-btn:hover {
-  background: #cbd5e0;
-}
-
-.popover-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-}
-
-.popover-description {
-  color: #4a5568;
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-.popover-paragraph {
-  margin: 0 0 1em 0;
-  text-align: justify;
-}
-
-.popover-paragraph:last-child {
-  margin-bottom: 0;
-}
-
-.pv-pm-display {
-  display: flex;
-  gap: 30px;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 2px solid #e2e8f0;
-}
-
-.pv-pm-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 1.1rem;
-}
-
-.pv-pm-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #2d3748;
-  background: #edf2f7;
-  padding: 4px 12px;
-  border-radius: 4px;
-  min-width: 50px;
-  text-align: center;
-}
-
-.unique-advantage-display {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-
-.unique-advantage-display .advantage-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  transition: box-shadow 0.2s;
-  min-width: 0;
-  box-sizing: border-box;
-  width: 100%;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.advantage-description {
-  padding: 10px;
-  background: #f7fafc;
-  border-left: 3px solid #4299e1;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  color: #4a5568;
-  margin-top: 10px;
-}
-
-.form-group small {
-  display: block;
-  margin-top: 4px;
-  font-size: 0.85rem;
-  color: #718096;
-}
-
-.form-group small.pe-conversion {
-  color: #38a169;
-  font-weight: 600;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-top: 2px solid #e2e8f0;
-}
-
-.modal-points-info {
-  color: #4a5568;
-  font-weight: 600;
-}
-
-.modal-points-info strong {
-  color: #2d3748;
-  font-size: 1.1rem;
-}
-
-/* Modifiers Modal Styles */
-.modifiers-info {
-  margin-bottom: 20px;
-  padding: 15px;
-  background: #f7fafc;
-  border-radius: 6px;
-  border: 2px solid #e2e8f0;
-}
-
-.modifiers-info p {
-  margin: 8px 0;
-  color: #4a5568;
-}
-
-.modifiers-info .error-message {
-  color: #c53030;
-  font-weight: 600;
-  margin-top: 10px;
-}
-
-.modifiers-list {
-  margin-top: 20px;
-}
-
-.modifiers-list h3 {
-  margin-bottom: 15px;
-  color: #2d3748;
-  font-size: 1.1rem;
-}
-
-.modifier-option {
-  padding: 15px;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-  margin-bottom: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  background: white;
-}
-
-.modifier-option:hover {
-  border-color: #4299e1;
-  box-shadow: 0 2px 4px rgba(66, 153, 225, 0.1);
-}
-
-.modifier-option.selected {
-  border-color: #4299e1;
-  background: #ebf8ff;
-}
-
-.modifier-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.modifier-name-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.modifier-name-wrapper input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.modifier-name {
-  font-weight: 600;
-  color: #2d3748;
-  font-size: 1rem;
-}
-
-.modifier-cost {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.cost-modifier {
-  padding: 4px 10px;
-  background: #4299e1;
-  color: white;
-  border-radius: 4px;
-  font-size: 0.85em;
-  font-weight: 600;
-}
-
-.pm-modifier {
-  padding: 4px 10px;
-  background: #805ad5;
-  color: white;
-  border-radius: 4px;
-  font-size: 0.85em;
-  font-weight: 600;
-}
-
-.modifier-description {
-  color: #4a5568;
-  font-size: 0.9em;
-  line-height: 1.5;
-  margin-top: 8px;
-}
-
-.modifier-restriction {
-  margin-top: 8px;
-  padding: 6px 10px;
-  background: #fff5cd;
-  border-left: 3px solid #f6ad55;
-  border-radius: 4px;
-  font-size: 0.85em;
-  color: #744210;
-}
-
-.btn-cancel {
-  padding: 10px 20px;
-  background: #cbd5e0;
-  color: #2d3748;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-cancel:hover {
-  background: #a0aec0;
-}
-
-.btn-confirm {
-  padding: 10px 20px;
-  background: #4299e1;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-confirm:hover:not(:disabled) {
-  background: #3182ce;
-}
-
-.btn-confirm:disabled {
-  background: #cbd5e0;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-/* Quantity Modal Styles */
-.quantity-info {
-  margin-bottom: 20px;
-  padding: 15px;
-  background: #f7fafc;
-  border-radius: 6px;
-  border: 2px solid #e2e8f0;
-}
-
-.quantity-info p {
-  margin: 8px 0;
-  color: #4a5568;
-}
-
-.quantity-selector {
-  margin-top: 20px;
-}
-
-.quantity-selector label {
-  display: block;
-  margin-bottom: 10px;
-  font-weight: 600;
-  color: #2d3748;
-}
-
-.quantity-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.btn-quantity {
-  width: 40px;
-  height: 40px;
-  border: 2px solid #cbd5e0;
-  background: white;
-  border-radius: 6px;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #2d3748;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-quantity:hover:not(:disabled) {
-  background: #4299e1;
-  border-color: #4299e1;
-  color: white;
-}
-
-.btn-quantity:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.quantity-input {
-  width: 80px;
-  height: 40px;
-  text-align: center;
-  border: 2px solid #cbd5e0;
-  border-radius: 6px;
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #2d3748;
-}
-
-.quantity-input:focus {
-  outline: none;
-  border-color: #4299e1;
-}
-
-.quantity-badge {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 8px;
-  background: #4299e1;
-  color: white;
-  border-radius: 12px;
-  font-size: 0.75em;
-  font-weight: 600;
-}
-
-.quantity-selector-inline {
-  margin: 15px 0;
-  padding: 15px;
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 6px;
-}
-
-.quantity-selector-inline label {
-  display: block;
-  margin-bottom: 10px;
-  font-weight: 600;
-  color: #2d3748;
-}
-
-.btn-close {
-  padding: 10px 20px;
-  background: #4299e1;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-close:hover {
-  background: #3182ce;
-}
-
-/* Estilos para Modal de Perícias */
-.skills-mode-selector {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.mode-button {
-  flex: 1;
-  padding: 12px 20px;
-  border: 2px solid #cbd5e0;
-  border-radius: 6px;
-  background: white;
-  color: #4a5568;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.mode-button:hover {
-  border-color: #4299e1;
-  background: #edf2f7;
-}
-
-.mode-button.active {
-  background: #4299e1;
-  color: white;
-  border-color: #4299e1;
-}
-
-.skills-full-mode,
-.skills-specializations-mode {
-  margin-top: 20px;
-}
-
-.specializations-counter {
-  padding: 10px;
-  background: #edf2f7;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  text-align: center;
-  font-weight: 600;
-  color: #4a5568;
-}
-
-.specializations-counter strong {
-  color: #2d3748;
-  font-size: 1.1rem;
-}
-
-.specializations-list {
-  max-height: 400px;
-  overflow-y: auto;
-  margin-bottom: 20px;
-}
-
-.skill-group {
-  margin-bottom: 25px;
-  padding: 15px;
-  background: #f7fafc;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-}
-
-.skill-group-title {
-  margin: 0 0 15px 0;
-  color: #2d3748;
-  font-size: 1.1rem;
-  font-weight: 600;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #cbd5e0;
-}
-
-.specializations-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
-}
-
-.specialization-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.specialization-item:hover:not(.disabled) {
-  border-color: #4299e1;
-  background: #edf2f7;
-}
-
-.specialization-item.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.specialization-item.already-acquired {
-  background: #fed7d7;
-  border-color: #fc8181;
-}
-
-.specialization-item.already-acquired .specialization-name {
-  color: #742a2a;
-}
-
-.already-acquired-badge {
-  font-size: 0.75rem;
-  color: #c53030;
-  font-weight: 600;
-  margin-left: 5px;
-}
-
-.specialization-item input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-}
-
-.specialization-item.disabled input[type="checkbox"] {
-  cursor: not-allowed;
-}
-
-.specialization-name {
-  flex: 1;
-  font-size: 0.9rem;
-  color: #2d3748;
-}
-
-.specializations-actions {
-  display: flex;
-  gap: 10px;
-  padding-top: 20px;
-  border-top: 2px solid #e2e8f0;
-}
-
-.btn-confirm-specializations {
-  flex: 1;
-  padding: 12px 20px;
-  background: #38a169;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-confirm-specializations:hover:not(:disabled) {
-  background: #2f855a;
-}
-
-.btn-confirm-specializations:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-clear-specializations {
-  padding: 12px 20px;
-  background: #e53e3e;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn-clear-specializations:hover {
-  background: #c53030;
-}
-
-/* Responsividade */
-@media (max-width: 1024px) {
-  .sections-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .character-sheet {
-    padding: 20px;
-  }
-
-  .sheet-header h1 {
-    font-size: 1.5rem;
-  }
-
-  .points-control {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .attributes-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .sections-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .section-header-with-button {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .advantages-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .advantages-list-main {
-    grid-template-columns: 1fr;
-  }
-
-  .modal-content {
-    max-height: 95vh;
-  }
-
-  .modal-footer {
-    flex-direction: column;
-    gap: 10px;
-    align-items: stretch;
-  }
-}
+@import './CharacterSheet.css';
 </style>
 
