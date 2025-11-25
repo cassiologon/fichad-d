@@ -239,5 +239,140 @@ export default {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Responsividade Mobile */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .modal-header {
+    padding: 15px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .btn-close-modal {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1.3rem;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+
+  .modal-body p {
+    font-size: 0.95rem;
+  }
+
+  .attributes-choice-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 15px;
+  }
+
+  .attribute-choice-option {
+    padding: 12px;
+    min-height: 60px;
+  }
+
+  .attribute-choice-name {
+    font-size: 0.95rem;
+  }
+
+  .attribute-choice-value {
+    font-size: 1.1rem;
+    padding: 4px 10px;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 10px;
+    padding: 15px;
+    align-items: stretch;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0;
+  }
+
+  .modal-content {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-header {
+    padding: 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .btn-close-modal {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 1.2rem;
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  .modal-body p {
+    font-size: 0.9rem;
+  }
+
+  .attributes-choice-grid {
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .attribute-choice-option {
+    padding: 10px;
+  }
+
+  .attribute-choice-name {
+    font-size: 0.9rem;
+  }
+
+  .attribute-choice-value {
+    font-size: 1rem;
+    padding: 4px 8px;
+  }
+
+  .modal-footer {
+    padding: 12px;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+  }
+}
 </style>
 

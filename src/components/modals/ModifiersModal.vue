@@ -476,5 +476,189 @@ export default {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Responsividade Mobile */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .modal-header {
+    padding: 15px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .btn-close-modal {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1.3rem;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+
+  .modifiers-info {
+    padding: 12px;
+    margin-bottom: 15px;
+  }
+
+  .modifiers-info p {
+    font-size: 0.9rem;
+    margin: 6px 0;
+  }
+
+  .quantity-selector-inline {
+    padding: 12px;
+    margin: 12px 0;
+  }
+
+  .quantity-selector-inline label {
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+  }
+
+  .btn-quantity {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .quantity-input {
+    width: 100px;
+    height: 44px;
+    font-size: 1.1rem;
+  }
+
+  .modifiers-list {
+    margin-top: 15px;
+  }
+
+  .modifiers-list h3 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+
+  .modifier-option {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .modifier-name {
+    font-size: 0.95rem;
+  }
+
+  .modifier-description {
+    font-size: 0.85em;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 10px;
+    padding: 15px;
+    align-items: stretch;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0;
+  }
+
+  .modal-content {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-header {
+    padding: 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .btn-close-modal {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 1.2rem;
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  .modifiers-info {
+    padding: 10px;
+  }
+
+  .modifiers-info p {
+    font-size: 0.85rem;
+  }
+
+  .quantity-selector-inline {
+    padding: 10px;
+  }
+
+  .quantity-selector-inline label {
+    font-size: 0.9rem;
+  }
+
+  .btn-quantity {
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+  }
+
+  .quantity-input {
+    width: 90px;
+    height: 44px;
+    font-size: 1rem;
+  }
+
+  .modifier-option {
+    padding: 10px;
+  }
+
+  .modifier-name {
+    font-size: 0.9rem;
+  }
+
+  .modifier-description {
+    font-size: 0.8em;
+  }
+
+  .modal-footer {
+    padding: 12px;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+  }
+}
 </style>
 

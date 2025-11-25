@@ -615,5 +615,211 @@ export default {
 .btn-close:hover {
   background: #3182ce;
 }
+
+/* Responsividade Mobile */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .modal-header {
+    padding: 15px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .btn-close-modal {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1.3rem;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+
+  .skills-mode-selector {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+  }
+
+  .mode-button {
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+  }
+
+  .search-box {
+    margin-bottom: 15px;
+  }
+
+  .search-input {
+    padding: 12px;
+    font-size: 1rem;
+    min-height: 44px;
+  }
+
+  .advantages-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .advantage-option {
+    padding: 12px;
+    min-height: 60px;
+  }
+
+  .specializations-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .specialization-item {
+    padding: 10px;
+    min-height: 44px;
+  }
+
+  .specializations-actions {
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 15px;
+  }
+
+  .btn-confirm-specializations,
+  .btn-clear-specializations {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px;
+    align-items: stretch;
+  }
+
+  .modal-points-info {
+    text-align: center;
+    font-size: 0.9rem;
+  }
+
+  .modal-points-info strong {
+    font-size: 1rem;
+  }
+
+  .btn-close {
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0;
+  }
+
+  .modal-content {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-header {
+    padding: 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .btn-close-modal {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 1.2rem;
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  .skills-mode-selector {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+  }
+
+  .mode-button {
+    font-size: 0.9rem;
+    padding: 10px 14px;
+  }
+
+  .search-box {
+    margin-bottom: 12px;
+  }
+
+  .search-input {
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+
+  .advantages-grid {
+    gap: 8px;
+  }
+
+  .advantage-option {
+    padding: 10px;
+  }
+
+  .advantage-option-name {
+    font-size: 0.85rem;
+  }
+
+  .advantage-option-cost {
+    font-size: 0.8rem;
+  }
+
+  .specializations-grid {
+    gap: 6px;
+  }
+
+  .specialization-item {
+    padding: 8px;
+  }
+
+  .specialization-name {
+    font-size: 0.85rem;
+  }
+
+  .modal-footer {
+    padding: 12px;
+  }
+
+  .modal-points-info {
+    font-size: 0.85rem;
+  }
+
+  .modal-points-info strong {
+    font-size: 0.95rem;
+  }
+
+  .btn-close {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+  }
+}
 </style>
 

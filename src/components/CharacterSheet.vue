@@ -49,95 +49,88 @@
     </div>
 
     <div class="sheet-content">
-      <!-- Informações Básicas -->
-      <section class="sheet-section">
-        <h2>Informações Básicas</h2>
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="name">Nome:</label>
-            <input
-              id="name"
-              type="text"
-              v-model="character.name"
-              @input="saveToCookie"
-              placeholder="Nome do personagem"
-            />
+      <!-- Grid: Informações Básicas e Atributos lado a lado -->
+      <div class="basic-info-attributes-grid">
+        <!-- Informações Básicas -->
+        <section class="sheet-section">
+          <h2>Informações Básicas</h2>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="name">Nome:</label>
+              <input
+                id="name"
+                type="text"
+                v-model="character.name"
+                @input="saveToCookie"
+                placeholder="Nome do personagem"
+              />
+            </div>
+            <div class="form-group">
+              <label for="experience-points">Pontos de Experiência (PEs):</label>
+              <input
+                id="experience-points"
+                type="number"
+                v-model.number="character.experiencePoints"
+                @input="saveToCookie"
+                min="0"
+                placeholder="0"
+              />
+              <small>10 PEs = 1 ponto de personagem (use PEs para evoluir o personagem)</small>
+              <small v-if="character.experiencePoints >= 10" class="pe-conversion">
+                Você pode converter {{ Math.floor(character.experiencePoints / 10) }} ponto(s) de PEs
+              </small>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="experience-points">Pontos de Experiência (PEs):</label>
-            <input
-              id="experience-points"
-              type="number"
-              v-model.number="character.experiencePoints"
-              @input="saveToCookie"
-              min="0"
-              placeholder="0"
-            />
-            <small>10 PEs = 1 ponto de personagem (use PEs para evoluir o personagem)</small>
-            <small v-if="character.experiencePoints >= 10" class="pe-conversion">
-              Você pode converter {{ Math.floor(character.experiencePoints / 10) }} ponto(s) de PEs
-            </small>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- Atributos -->
-      <section class="sheet-section">
-        <h2>Atributos</h2>
-        <div class="attributes-grid">
-          <div
-            v-for="(value, attr) in character.attributes"
-            :key="attr"
-            class="attribute-item"
-          >
-            <div class="attribute-header">
-              <label :for="attr">{{ formatAttributeName(attr) }}:</label>
-              <div class="attribute-value-wrapper">
-                <div class="attribute-value">{{ value }}</div>
-                <span v-if="getAttributeBonusLabel(attr)" class="attribute-bonus-badge">
-                  {{ getAttributeBonusLabel(attr) }}
-                </span>
+        <!-- Atributos -->
+        <section class="sheet-section">
+          <h2>Atributos</h2>
+          <div class="attributes-grid">
+            <div
+              v-for="(value, attr) in character.attributes"
+              :key="attr"
+              class="attribute-item"
+            >
+              <div class="attribute-label">{{ formatAttributeName(attr) }}</div>
+              <div class="attribute-main-value">{{ value }}</div>
+              <span v-if="getAttributeBonusLabel(attr)" class="attribute-bonus-badge">
+                {{ getAttributeBonusLabel(attr) }}
+              </span>
+              <div class="attribute-controls">
+                <button
+                  type="button"
+                  @click="decreaseAttribute(attr)"
+                  class="btn-control btn-decrease"
+                  title="Diminuir"
+                >
+                  -
+                </button>
+                <button
+                  type="button"
+                  @click="increaseAttribute(attr)"
+                  :disabled="value >= 5"
+                  class="btn-control btn-increase"
+                  title="Aumentar"
+                >
+                  +
+                </button>
               </div>
             </div>
-            <div class="attribute-controls">
-              <button
-                type="button"
-                @click="decreaseAttribute(attr)"
-                class="btn-control btn-decrease"
-              >
-                -
-              </button>
-              <input
-                :id="attr"
-                type="number"
-                v-model.number="character.attributes[attr]"
-                @input="updateAttribute(attr)"
-                max="5"
-                class="attribute-input"
-              />
-              <button
-                type="button"
-                @click="increaseAttribute(attr)"
-                :disabled="value >= 5"
-                class="btn-control btn-increase"
-              >
-                +
-              </button>
+          </div>
+          <!-- PVs e PMs -->
+          <div class="pv-pm-display">
+            <div class="pv-pm-item">
+              <span class="pv-pm-label">PVs:</span>
+              <span class="pv-pm-value">{{ calculatedPVs }}</span>
+            </div>
+            <div class="pv-pm-item">
+              <span class="pv-pm-label">PMs:</span>
+              <span class="pv-pm-value">{{ calculatedPMs }}</span>
             </div>
           </div>
-        </div>
-        <!-- PVs e PMs -->
-        <div class="pv-pm-display">
-          <div class="pv-pm-item">
-            <strong>Pontos de Vida (PVs):</strong> 
-            <span class="pv-pm-value">{{ calculatedPVs }}</span>
-          </div>
-          <div class="pv-pm-item">
-            <strong>Pontos de Magia (PMs):</strong> 
-            <span class="pv-pm-value">{{ calculatedPMs }}</span>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <!-- Grid de Seções: Raça, Vantagens, Desvantagens e Perícias -->
       <div class="sections-grid">
@@ -537,6 +530,16 @@
     @confirm="handleConfirm"
     @cancel="handleCancel"
   />
+
+  <!-- Botão Flutuante de Pontos -->
+  <div class="points-floating">
+    <div class="points-floating-content">
+      <span class="points-floating-label">Pontos Restantes:</span>
+      <span class="points-floating-value" :class="{ 'negative': remainingPoints < 0 }">
+        {{ remainingPoints }}
+      </span>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -1139,12 +1142,6 @@ export default {
         this.character.attributes[attr]--
         this.saveToCookie()
       }
-    },
-    updateAttribute(attr) {
-      if (this.character.attributes[attr] > 5) {
-        this.character.attributes[attr] = 5
-      }
-      this.saveToCookie()
     },
     updateTotalPoints() {
       this.saveToCookie()

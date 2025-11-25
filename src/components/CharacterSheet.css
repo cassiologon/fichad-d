@@ -167,10 +167,71 @@
   }
 }
 
+/* Botão Flutuante de Pontos */
+.points-floating {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: white;
+  border-radius: 50px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 12px 20px;
+  min-width: 180px;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.points-floating:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.points-floating-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.points-floating-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4a5568;
+  white-space: nowrap;
+}
+
+.points-floating-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #38a169;
+  min-width: 40px;
+  text-align: center;
+}
+
+.points-floating-value.negative {
+  color: #e53e3e;
+  font-size: 1.4rem;
+  text-shadow: 0 0 3px rgba(229, 62, 62, 0.5);
+  animation: pulse-negative 2s ease-in-out infinite;
+}
+
 .sheet-content {
   display: flex;
   flex-direction: column;
   gap: 30px;
+}
+
+/* Grid para Informações Básicas e Atributos lado a lado */
+.basic-info-attributes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.basic-info-attributes-grid .sheet-section h2 {
+  font-size: 1.3rem;
+  margin-bottom: 16px;
 }
 
 .sheet-section {
@@ -272,61 +333,58 @@
 
 .attributes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .attribute-item {
   background: white;
   border: 2px solid #e2e8f0;
   border-radius: 6px;
-  padding: 15px;
-  transition: box-shadow 0.2s;
+  padding: 10px;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
 .attribute-item:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #4299e1;
 }
 
-.attribute-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.attribute-header label {
+.attribute-label {
   font-weight: 600;
   color: #4a5568;
-  font-size: 1.1rem;
+  font-size: 0.85rem;
+  text-align: center;
+  line-height: 1.2;
 }
 
-.attribute-value-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-
-.attribute-value {
-  font-size: 1.5rem;
+.attribute-main-value {
+  font-size: 2rem;
   font-weight: 700;
   color: #2d3748;
-  background: #edf2f7;
-  padding: 4px 12px;
-  border-radius: 4px;
-  min-width: 50px;
+  background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+  padding: 8px 16px;
+  border-radius: 8px;
+  min-width: 60px;
   text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid #cbd5e0;
 }
 
 .attribute-bonus-badge {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 600;
-  color: #2d3748;
+  color: #22543d;
   background: #c6f6d5;
-  padding: 2px 8px;
-  border-radius: 12px;
+  padding: 2px 6px;
+  border-radius: 10px;
   white-space: nowrap;
+  text-align: center;
 }
 
 .attribute-total {
@@ -385,27 +443,30 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  justify-content: center;
 }
 
 .btn-control {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: 2px solid #cbd5e0;
   border-radius: 4px;
   background: white;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .btn-control:hover:not(:disabled) {
   background: #edf2f7;
   border-color: #4299e1;
-  transform: scale(1.05);
+  transform: scale(1.1);
 }
 
 .btn-control:disabled {
@@ -419,21 +480,6 @@
 
 .btn-increase {
   color: #38a169;
-}
-
-.attribute-input {
-  flex: 1;
-  padding: 8px;
-  border: 2px solid #cbd5e0;
-  border-radius: 4px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-align: center;
-}
-
-.attribute-input:focus {
-  outline: none;
-  border-color: #4299e1;
 }
 
 .sheet-actions {
@@ -738,38 +784,48 @@
 /* PVs e PMs Display */
 .pv-pm-display {
   display: flex;
-  gap: 24px;
-  margin-top: 20px;
-  padding-top: 20px;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 2px solid #e2e8f0;
+  justify-content: center;
 }
 
 .pv-pm-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1rem;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.pv-pm-label {
+  font-weight: 600;
   color: #4a5568;
 }
 
-.pv-pm-item strong {
+.pv-pm-value {
+  font-size: 1.4rem;
   font-weight: 700;
   color: #2d3748;
-}
-
-.pv-pm-value {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #000000;
-  background: #edf2f7;
-  padding: 6px 14px;
+  background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+  padding: 6px 12px;
   border-radius: 6px;
   min-width: 50px;
   text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid #cbd5e0;
 }
 
 /* Responsividade */
 @media (max-width: 1024px) {
+  .basic-info-attributes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .attributes-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   .sections-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -798,14 +854,24 @@
   .points-control {
     flex-direction: column;
     align-items: flex-start;
+    gap: 15px;
+  }
+
+  .points-input {
+    width: 100%;
+    max-width: 200px;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
   }
 
-  .attributes-grid {
+  .basic-info-attributes-grid {
     grid-template-columns: 1fr;
+  }
+
+  .attributes-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .sections-grid {
@@ -816,6 +882,10 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+
+  .section-header-with-button h2 {
+    font-size: 1.2rem;
   }
 
   .advantages-grid {
@@ -839,16 +909,371 @@
   .btn-import,
   .btn-reset {
     width: 100%;
+    min-height: 44px;
+    font-size: 1rem;
   }
 
   .tabs-list {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
   }
 
   .tab-item {
     min-width: 80px;
     font-size: 0.85rem;
     padding: 8px 10px;
+    min-height: 44px;
+  }
+
+  .tab-close {
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .tab-add {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+
+  .points-floating {
+    bottom: 15px;
+    right: 15px;
+    padding: 10px 16px;
+    min-width: 150px;
+  }
+
+  .points-floating-label {
+    font-size: 0.8rem;
+  }
+
+  .points-floating-value {
+    font-size: 1.1rem;
+  }
+
+  .points-floating-value.negative {
+    font-size: 1.2rem;
+  }
+
+  .btn-control {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .btn-add-advantage {
+    min-height: 44px;
+    width: 100%;
+  }
+
+  .btn-remove-advantage {
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  .sheet-section {
+    padding: 15px;
+  }
+
+  .sheet-section h2 {
+    font-size: 1.3rem;
+  }
+
+  .advantage-item {
+    padding: 10px;
+  }
+
+  .attribute-item {
+    padding: 12px;
+  }
+
+  .attribute-header label {
+    font-size: 1rem;
+  }
+
+  .attribute-value {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .character-sheet {
+    padding: 12px;
+    border-radius: 4px;
+  }
+
+  .sheet-header {
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+  }
+
+  .sheet-header h1 {
+    font-size: 1.3rem;
+    margin-bottom: 15px;
+  }
+
+  .points-control {
+    gap: 12px;
+  }
+
+  .points-control label {
+    font-size: 0.9rem;
+  }
+
+  .points-input {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
+
+  .points-remaining {
+    font-size: 1rem;
+  }
+
+  .points-remaining span {
+    font-size: 1.1rem;
+  }
+
+  .points-remaining span.negative {
+    font-size: 1.15rem;
+  }
+
+  .sheet-content {
+    gap: 20px;
+  }
+
+  .sheet-section {
+    padding: 12px;
+  }
+
+  .sheet-section h2 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+  }
+
+  .sections-grid .sheet-section h2 {
+    font-size: 1rem;
+  }
+
+  .form-grid {
+    gap: 15px;
+  }
+
+  .form-group label {
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+  }
+
+  .form-group input,
+  .form-group textarea {
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+
+  .basic-info-attributes-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .attributes-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .attribute-item {
+    padding: 8px;
+  }
+
+  .attribute-header {
+    margin-bottom: 10px;
+  }
+
+  .attribute-header label {
+    font-size: 0.95rem;
+  }
+
+  .attribute-value {
+    font-size: 1.2rem;
+    padding: 4px 10px;
+  }
+
+  .attribute-bonus-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+
+  .btn-control {
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+  }
+
+  .section-header-with-button {
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+  }
+
+  .section-header-with-button h2 {
+    font-size: 1.1rem;
+  }
+
+  .btn-add-advantage {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    min-height: 44px;
+  }
+
+  .advantages-list-main {
+    gap: 8px;
+  }
+
+  .advantages-list-main .advantage-item {
+    padding: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .advantage-info {
+    width: 100%;
+  }
+
+  .advantage-name {
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+  }
+
+  .advantage-cost {
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+  }
+
+  .btn-remove-advantage {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+    align-self: flex-end;
+    margin-top: 8px;
+  }
+
+  .pv-pm-display {
+    margin-top: 15px;
+    padding-top: 15px;
+    gap: 10px;
+  }
+
+  .pv-pm-item {
+    font-size: 0.9rem;
+    flex-wrap: wrap;
+  }
+
+  .pv-pm-item strong {
+    font-size: 0.95rem;
+  }
+
+  .pv-pm-value {
+    font-size: 1.1rem;
+    padding: 6px 12px;
+  }
+
+  .sheet-actions {
+    gap: 10px;
+    padding-top: 15px;
+  }
+
+  .btn-export,
+  .btn-import,
+  .btn-reset {
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    min-height: 44px;
+  }
+
+  .tabs-container {
+    margin-bottom: 15px;
+  }
+
+  .tabs-list {
+    gap: 6px;
+  }
+
+  .tab-item {
+    min-width: 70px;
+    font-size: 0.8rem;
+    padding: 8px 10px;
+    min-height: 40px;
+  }
+
+  .tab-name {
+    font-size: 0.8rem;
+  }
+
+  .tab-close {
+    width: 24px;
+    height: 24px;
+    font-size: 1rem;
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  .tab-add {
+    padding: 8px 12px;
+    font-size: 1.1rem;
+    min-height: 40px;
+  }
+
+  .points-floating {
+    bottom: 15px;
+    right: 15px;
+    padding: 10px 16px;
+    min-width: auto;
+    width: auto;
+    border-radius: 50px;
+  }
+
+  .points-floating-content {
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .points-floating-label {
+    font-size: 0.75rem;
+  }
+
+  .points-floating-value {
+    font-size: 1.1rem;
+  }
+
+  .points-floating-value.negative {
+    font-size: 1.2rem;
+  }
+
+  .no-advantages {
+    padding: 15px;
+    font-size: 0.9rem;
+  }
+
+  .advantage-description {
+    padding: 8px;
+    font-size: 0.85rem;
+    margin-top: 8px;
+  }
+
+  .quantity-badge {
+    font-size: 0.8rem;
+  }
+
+  .modifier-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+  }
+
+  .free-badge {
+    font-size: 0.8em;
+    padding: 3px 8px;
+  }
+
+  .discount-badge {
+    font-size: 0.75em;
+    padding: 3px 8px;
   }
 }
 

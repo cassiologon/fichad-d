@@ -145,5 +145,98 @@ export default {
 .popover-paragraph:last-child {
   margin-bottom: 0;
 }
+
+/* Responsividade Mobile */
+@media (max-width: 768px) {
+  .popover-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .popover-content {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .popover-header {
+    padding: 15px;
+  }
+
+  .popover-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .popover-close-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1.3rem;
+  }
+
+  .popover-body {
+    padding: 15px;
+  }
+
+  .popover-spell-info {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+  }
+
+  .popover-spell-info p {
+    font-size: 0.9rem;
+    margin: 6px 0;
+  }
+
+  .popover-description {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .popover-overlay {
+    padding: 0;
+  }
+
+  .popover-content {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .popover-header {
+    padding: 12px;
+  }
+
+  .popover-header h3 {
+    font-size: 1rem;
+  }
+
+  .popover-close-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 1.2rem;
+  }
+
+  .popover-body {
+    padding: 12px;
+  }
+
+  .popover-spell-info {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+  }
+
+  .popover-spell-info p {
+    font-size: 0.85rem;
+    margin: 4px 0;
+  }
+
+  .popover-description {
+    font-size: 0.85rem;
+  }
+}
 </style>
 

@@ -289,5 +289,153 @@ export default {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Responsividade Mobile */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .modal-header {
+    padding: 15px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .btn-close-modal {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1.3rem;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+
+  .free-advantage-group {
+    margin-bottom: 15px;
+    padding: 12px;
+  }
+
+  .free-advantage-group h3 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+
+  .free-advantages-options {
+    gap: 8px;
+  }
+
+  .free-advantage-option {
+    padding: 12px;
+    min-height: 44px;
+  }
+
+  .free-advantage-auto {
+    padding: 12px;
+  }
+
+  .free-advantage-name {
+    font-size: 0.95rem;
+  }
+
+  .free-advantage-badge {
+    font-size: 0.8rem;
+    padding: 3px 8px;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 10px;
+    padding: 15px;
+    align-items: stretch;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0;
+  }
+
+  .modal-content {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-header {
+    padding: 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .btn-close-modal {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 1.2rem;
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  .free-advantage-group {
+    margin-bottom: 12px;
+    padding: 10px;
+  }
+
+  .free-advantage-group h3 {
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+  }
+
+  .free-advantage-option {
+    padding: 10px;
+  }
+
+  .free-advantage-auto {
+    padding: 10px;
+  }
+
+  .free-advantage-name {
+    font-size: 0.9rem;
+  }
+
+  .free-advantage-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+  }
+
+  .modal-footer {
+    padding: 12px;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+  }
+}
 </style>
 

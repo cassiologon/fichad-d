@@ -433,5 +433,182 @@ export default {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Responsividade Mobile */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .modal-header {
+    padding: 15px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .btn-close-modal {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1.3rem;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+
+  .alien-bonus-options {
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+
+  .alien-bonus-option {
+    padding: 12px;
+    min-height: 44px;
+  }
+
+  .alien-bonus-selection {
+    margin-top: 15px;
+    padding-top: 15px;
+  }
+
+  .alien-bonus-selection h3 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+
+  .advantages-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .advantage-option {
+    padding: 12px;
+    min-height: 60px;
+  }
+
+  .advantage-option-name {
+    font-size: 0.95rem;
+  }
+
+  .advantage-option-cost {
+    font-size: 0.9rem;
+  }
+
+  .advantage-info-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 10px;
+    padding: 15px;
+    align-items: stretch;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0;
+  }
+
+  .modal-content {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-header {
+    padding: 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .btn-close-modal {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 1.2rem;
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  .alien-bonus-option {
+    padding: 10px;
+  }
+
+  .alien-bonus-selection h3 {
+    font-size: 0.95rem;
+  }
+
+  .advantages-grid {
+    gap: 8px;
+  }
+
+  .advantage-option {
+    padding: 10px;
+  }
+
+  .advantage-option-name {
+    font-size: 0.9rem;
+  }
+
+  .advantage-option-cost {
+    font-size: 0.85rem;
+  }
+
+  .advantage-option-summary {
+    font-size: 0.7rem;
+    margin-top: 4px;
+  }
+
+  .advantage-info-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .modal-footer {
+    padding: 12px;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+  }
+
+  .discount-badge {
+    font-size: 0.7em;
+    padding: 2px 6px;
+  }
+}
 </style>
 

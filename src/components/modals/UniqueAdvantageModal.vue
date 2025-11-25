@@ -324,5 +324,166 @@ export default {
 .btn-close:hover {
   background: #3182ce;
 }
+
+/* Responsividade Mobile */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-end;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .modal-header {
+    padding: 15px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .btn-close-modal {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    font-size: 1.3rem;
+  }
+
+  .modal-body {
+    padding: 15px;
+  }
+
+  .search-box {
+    margin-bottom: 15px;
+  }
+
+  .search-input {
+    padding: 12px;
+    font-size: 1rem;
+    min-height: 44px;
+  }
+
+  .advantages-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .advantage-option {
+    padding: 12px;
+    min-height: 60px;
+  }
+
+  .advantage-option-name {
+    font-size: 0.95rem;
+  }
+
+  .advantage-option-cost {
+    font-size: 0.9rem;
+  }
+
+  .advantage-info-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px;
+    align-items: stretch;
+  }
+
+  .btn-close {
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0;
+  }
+
+  .modal-content {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-header {
+    padding: 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .btn-close-modal {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    font-size: 1.2rem;
+  }
+
+  .modal-body {
+    padding: 12px;
+  }
+
+  .search-box {
+    margin-bottom: 12px;
+  }
+
+  .search-input {
+    padding: 10px;
+    font-size: 0.95rem;
+  }
+
+  .advantages-grid {
+    gap: 8px;
+  }
+
+  .advantage-option {
+    padding: 10px;
+  }
+
+  .advantage-option-name {
+    font-size: 0.9rem;
+  }
+
+  .advantage-option-cost {
+    font-size: 0.85rem;
+  }
+
+  .advantage-option-description {
+    font-size: 0.75rem;
+    margin-top: 4px;
+  }
+
+  .advantage-info-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .modal-footer {
+    padding: 12px;
+  }
+
+  .btn-close {
+    padding: 12px 16px;
+    font-size: 0.95rem;
+  }
+}
 </style>
 
