@@ -24,8 +24,15 @@ export default {
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f5f5f5;
   overflow-x: hidden;
+  
+  /* Fantasy Background - Using fundof.png image */
+  background-color: #e8e3d8; /* Fallback color */
+  background-image: url('./imagens/fundof.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 #app {
@@ -41,11 +48,21 @@ body {
   #app {
     padding: 10px;
   }
+  
+  body {
+    background-size: cover;
+    background-attachment: scroll; /* Better performance on mobile */
+  }
 }
 
 @media (max-width: 480px) {
   #app {
     padding: 8px;
+  }
+  
+  body {
+    background-size: cover;
+    background-attachment: scroll; /* Better performance on mobile */
   }
 }
 </style>
