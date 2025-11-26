@@ -6,6 +6,7 @@
 
 <script>
 import CharacterSheet from './components/CharacterSheet.vue'
+import './styles/medieval-modals.css'
 
 export default {
   name: 'App',
@@ -23,16 +24,17 @@ export default {
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Cinzel', 'MedievalSharp', serif;
   overflow-x: hidden;
   
-  /* Fantasy Background - Using fundof.png image */
-  background-color: #e8e3d8; /* Fallback color */
-  background-image: url('./imagens/fundof.png');
+  /* Fantasy Background - fundo3.png acompanhando o scroll */
+  background-color: #2c1810; /* Fallback color - marrom escuro medieval */
+  background-image: url('./imagens/fundo3.png');
   background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
+  background-position: center top;
+  background-attachment: scroll; /* acompanha o scroll, parte da estrutura */
   background-repeat: no-repeat;
+  color: #3d2817;
 }
 
 #app {
@@ -41,6 +43,7 @@ body {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+  padding-top: 60px;
 }
 
 /* Responsividade para App.vue */

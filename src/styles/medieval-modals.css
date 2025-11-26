@@ -1,0 +1,233 @@
+/* Estilos Medievais Globais para Modais */
+
+.modal-overlay {
+  background: rgba(20, 10, 5, 0.85) !important;
+  backdrop-filter: blur(2px);
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #f4e8d0 0%, #e8dcc0 100%) !important;
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(139, 90, 43, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(101, 67, 33, 0.1) 0%, transparent 50%);
+  border: 4px solid #8b5a2b !important;
+  border-radius: 0 !important;
+  box-shadow: 
+    0 12px 48px rgba(0, 0, 0, 0.5),
+    inset 0 0 60px rgba(139, 90, 43, 0.1),
+    0 0 20px rgba(139, 90, 43, 0.3) !important;
+  position: relative;
+}
+
+.modal-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139, 90, 43, 0.03) 2px, rgba(139, 90, 43, 0.03) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(139, 90, 43, 0.03) 2px, rgba(139, 90, 43, 0.03) 4px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.modal-header {
+  border-bottom: 3px solid #6b4423 !important;
+  position: relative;
+}
+
+.modal-header::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d4a574, transparent);
+}
+
+.modal-header h2 {
+  color: #3d2817 !important;
+  font-family: 'Cinzel', serif !important;
+  font-weight: 700 !important;
+  text-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.3),
+    0 0 10px rgba(139, 90, 43, 0.2) !important;
+  letter-spacing: 1px;
+}
+
+.btn-close-modal {
+  background: linear-gradient(135deg, #d4c4a8 0%, #c4b498 100%) !important;
+  border: 2px solid #8b5a2b !important;
+  border-radius: 0 !important;
+  color: #5c3d21 !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  font-family: 'Cinzel', serif !important;
+}
+
+.btn-close-modal:hover {
+  background: linear-gradient(135deg, #e4d4b8 0%, #d4c4a8 100%) !important;
+  border-color: #a67c52 !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
+    0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.modal-body {
+  color: #3d2817 !important;
+  font-family: 'Cinzel', serif !important;
+}
+
+.modal-body p {
+  color: #5c3d21 !important;
+  font-family: 'Cinzel', serif !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.modal-footer {
+  border-top: 3px solid #6b4423 !important;
+  position: relative;
+}
+
+.modal-footer::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d4a574, transparent);
+}
+
+.btn-cancel,
+.btn-confirm {
+  font-family: 'Cinzel', serif !important;
+  border-radius: 0 !important;
+  border: 3px solid !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s !important;
+}
+
+.btn-cancel {
+  background: linear-gradient(135deg, #8b1a1a 0%, #6b1414 100%) !important;
+  border-color: #5a0f0f !important;
+  color: #f4e8d0 !important;
+}
+
+.btn-cancel:hover {
+  background: linear-gradient(135deg, #9b2a2a 0%, #8b1a1a 100%) !important;
+  border-color: #6b1a1a !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    0 6px 12px rgba(0, 0, 0, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+.btn-confirm {
+  background: linear-gradient(135deg, #6b4423 0%, #5c3d21 100%) !important;
+  border-color: #4a2d14 !important;
+  color: #f4e8d0 !important;
+}
+
+.btn-confirm:hover {
+  background: linear-gradient(135deg, #7b5433 0%, #6b4423 100%) !important;
+  border-color: #5a3d24 !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    0 6px 12px rgba(0, 0, 0, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+/* Inputs e campos de formulário nos modais */
+.modal-body input,
+.modal-body textarea,
+.modal-body select {
+  border: 2px solid #8b5a2b !important;
+  border-radius: 0 !important;
+  background: rgba(244, 232, 208, 0.8) !important;
+  color: #3d2817 !important;
+  font-family: 'Cinzel', serif !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.modal-body input:focus,
+.modal-body textarea:focus,
+.modal-body select:focus {
+  border-color: #6b4423 !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    0 0 8px rgba(139, 90, 43, 0.3) !important;
+  background: rgba(244, 232, 208, 1) !important;
+  outline: none !important;
+}
+
+/* Labels nos modais */
+.modal-body label {
+  color: #5c3d21 !important;
+  font-family: 'Cinzel', serif !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+/* Botões nos modais */
+.modal-body button:not(.btn-close-modal):not(.btn-cancel):not(.btn-confirm) {
+  font-family: 'Cinzel', serif !important;
+  border-radius: 0 !important;
+  border: 2px solid #8b5a2b !important;
+  background: linear-gradient(135deg, #8b5a2b 0%, #6b4423 100%) !important;
+  color: #f4e8d0 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(255, 255, 255, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s !important;
+}
+
+.modal-body button:not(.btn-close-modal):not(.btn-cancel):not(.btn-confirm):hover {
+  background: linear-gradient(135deg, #a67c52 0%, #8b5a2b 100%) !important;
+  border-color: #8b5a2b !important;
+  box-shadow: 
+    inset 0 2px 4px rgba(255, 255, 255, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.4) !important;
+  transform: translateY(-1px);
+}
+
+/* Listas e itens nos modais */
+.modal-body .advantage-item,
+.modal-body .disadvantage-item,
+.modal-body .skill-item,
+.modal-body .spell-item {
+  background: linear-gradient(135deg, rgba(244, 232, 208, 0.9) 0%, rgba(232, 220, 192, 0.9) 100%) !important;
+  border: 2px solid #8b5a2b !important;
+  border-radius: 0 !important;
+  box-shadow: 
+    inset 0 0 10px rgba(139, 90, 43, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.modal-body .advantage-item:hover,
+.modal-body .disadvantage-item:hover,
+.modal-body .skill-item:hover,
+.modal-body .spell-item:hover {
+  box-shadow: 
+    inset 0 0 15px rgba(139, 90, 43, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  border-color: #a67c52 !important;
+  transform: translateY(-1px);
+}
+
+/* Badges e labels especiais */
+.modal-body .badge,
+.modal-body .tag {
+  border-radius: 0 !important;
+  border: 1px solid #8b5a2b !important;
+  font-family: 'Cinzel', serif !important;
+}
+

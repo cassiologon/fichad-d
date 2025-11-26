@@ -137,7 +137,7 @@
         <!-- Vantagem Única (Raça) -->
         <section class="sheet-section">
           <div class="section-header-with-button">
-            <h2>Raça (Vantagem Única)</h2>
+            <h2>Raça</h2>
             <button type="button" @click="showUniqueAdvantageModal = true" class="btn-add-advantage">
               {{ character.uniqueAdvantage ? 'Alterar Raça' : 'Selecionar Raça' }}
             </button>
@@ -159,9 +159,6 @@
             <div v-if="character.uniqueAdvantage.description" class="advantage-description">
               {{ character.uniqueAdvantage.description }}
             </div>
-          </div>
-          <div v-else class="no-advantages">
-            Nenhuma raça selecionada. Você será considerado Humano.
           </div>
         </section>
 
@@ -227,9 +224,6 @@
               </button>
             </div>
           </div>
-          <div v-else class="no-advantages">
-            Nenhuma vantagem selecionada. Clique em "Adicionar Vantagem" para começar.
-          </div>
         </section>
 
         <!-- Desvantagens -->
@@ -257,9 +251,6 @@
                 ×
               </button>
             </div>
-          </div>
-          <div v-else class="no-advantages">
-            Nenhuma desvantagem selecionada. Clique em "Adicionar Desvantagem" para começar.
           </div>
         </section>
 
@@ -295,9 +286,6 @@
               </button>
             </div>
           </div>
-          <div v-else class="no-advantages">
-            Nenhuma perícia selecionada. Clique em "Adicionar Perícia" para começar.
-          </div>
         </section>
       </div>
 
@@ -329,9 +317,6 @@
               ×
             </button>
           </div>
-        </div>
-        <div v-else class="no-advantages">
-          Nenhuma magia selecionada. Clique em "Adicionar Magia" para começar.
         </div>
       </section>
 
